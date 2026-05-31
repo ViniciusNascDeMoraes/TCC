@@ -1,120 +1,113 @@
 package Entities;
 
-import java.awt.Graphics;
-import java.awt.Rectangle;
-import java.awt.image.BufferedImage;
-
+import Camera.Camera;
 import Main.Game;
 import Main.Sound;
 import World.World;
-import Camera.Camera;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
 
 public class Enemy extends Entity {
 
-	private int maskx = 6, masky = 3, maskw = 8, maskh = 12;
+    public static String state = "GAMENORMAL";
+    public static boolean escudo = true;
+    public int right_dir = 0, left_dir = 1;
+    public int dir = right_dir;
+    int timer = 0;
+    private int maskx = 6, masky = 3, maskw = 8, maskh = 12;
+    private double speed = 1.5;
+    private BufferedImage[] rightEnemy;
+    private BufferedImage[] leftEnemy;
+    private int frames = 0, maxFrames = 20, index = 0, Maxindex = 1;
+    private boolean moved = false;
 
-	private double speed = 1.5;
+    public Enemy(int x, int y, int width, int height, BufferedImage sprite) {
+        super(x, y, width, height, sprite);
 
-	public static String state = "GAMENORMAL";
+        rightEnemy = new BufferedImage[2];
+        leftEnemy = new BufferedImage[2];
 
-	private BufferedImage[] rightEnemy;
-	private BufferedImage[] leftEnemy;
+        for (int i = 0; i < 2; i++) {
+            rightEnemy[i] = Game.spritesheet.getSprite(96 + (i * 16), 0, 16, 16);
+        }
 
-	int timer = 0;
-	
-	public static boolean escudo = true;
-	
-	private int frames = 0, maxFrames = 20, index = 0, Maxindex = 1;
-	public int right_dir = 0, left_dir = 1;
-	public int dir = right_dir;
-	private boolean moved = false;
+        for (int i = 0; i < 2; i++) {
+            leftEnemy[i] = Game.spritesheet.getSprite(96 + (i * 16), 16, 16, 16);
+        }
 
-	public Enemy(int x, int y, int width, int height, BufferedImage sprite) {
-		super(x, y, width, height, sprite);
+    }
 
-		rightEnemy = new BufferedImage[2];
-		leftEnemy = new BufferedImage[2];
+    public void moviment() {
+        if (World.place_free((int) (x + speed), this.getY())) {
+            x += speed;
+            moved = true;
+        } else if (!World.place_free((int) (x + speed), this.getY())) {
+            moved = true;
+            speed *= -1;
+            x += speed;
+        }
 
-		for (int i = 0; i < 2; i++) {
-			rightEnemy[i] = Game.spritesheet.getSprite(96 + (i * 16), 0, 16, 16);
-		}
+        if (speed < 0) {
+            dir = left_dir;
+        } else {
+            dir = right_dir;
+        }
+    }
 
-		for (int i = 0; i < 2; i++) {
-			leftEnemy[i] = Game.spritesheet.getSprite(96 + (i * 16), 16, 16, 16);
-		}
+    public void tick() {
 
-	}
+        maskx = 6;
+        masky = 3;
+        maskw = 8;
+        maskh = 12;
+        moved = false;
 
-	public void moviment() {
-		if (World.place_free((int) (x + speed), this.getY())) {
-			x += speed;
-			moved = true;
-		} else if (!World.place_free((int) (x + speed), this.getY())) {
-			moved = true;
-			speed *= -1;
-			x += speed;
-		}
+        if (this.isCollidingWithPlayer() == false) {
+            this.moviment();
 
-		if (speed < 0) {
-			dir = left_dir;
-		} else {
-			dir = right_dir;
-		}
-	}
+        } else if (this.isCollidingWithPlayer() == true && Game.LEVEL == 1) {
+            Game.player.life--;
+            if (Game.player.life == 0) {
+                state = "GAMEOVER";
+                Sound.play("res/Menino.wav");
+            }
 
-	public void tick() {
+        } else if (this.isCollidingWithPlayer() == true && Game.LEVEL == 3) {
 
-		maskx = 6;
-		masky = 3;
-		maskw = 8;
-		maskh = 12;
-		moved = false;
+            Sound.play("res/Menu.wav");
 
-		if (this.isCollidingWithPlayer() == false) {
-			this.moviment();
+            escudo = false;
+            Game.entities.remove(this);
+            Game.enemies.remove(this);
 
-		} else if (this.isCollidingWithPlayer() == true && Game.LEVEL == 1) {
-			Game.player.life--;
-			if (Game.player.life == 0) {
-				state = "GAMEOVER";
-				Sound.play("res/Menino.wav");
-			}
+            Game.contador++;
+        }
 
-		} else if (this.isCollidingWithPlayer() == true && Game.LEVEL == 3) {
-			
-			Sound.play("res/Menu.wav");
-						
-			escudo = false;
-			Game.entities.remove(this);
-			Game.enemies.remove(this);
-			
-			Game.contador ++;
-		}
+        if (moved == true) {
+            frames++;
+            if (frames == maxFrames) {
+                frames = 0;
+                index++;
+                if (index > Maxindex) {
+                    index = 0;
+                }
+            }
+        }
+    }
 
-		if (moved == true) {
-			frames++;
-			if (frames == maxFrames) {
-				frames = 0;
-				index++;
-				if (index > Maxindex) {
-					index = 0;
-				}
-			}
-		}
-	}
+    public boolean isCollidingWithPlayer() {
+        Rectangle enemyAtual = new Rectangle(this.getX() + maskx, this.getY() + masky, maskw, maskh);
+        Rectangle player = new Rectangle(Game.player.getX(), Game.player.getY(), 16, 16);
 
-	public boolean isCollidingWithPlayer() {
-		Rectangle enemyAtual = new Rectangle(this.getX() + maskx, this.getY() + masky, maskw, maskh);
-		Rectangle player = new Rectangle(Game.player.getX(), Game.player.getY(), 16, 16);
+        return enemyAtual.intersects(player);
+    }
 
-		return enemyAtual.intersects(player);
-	}
-
-	public void render(Graphics g) {
-		if (dir == right_dir) {
-			g.drawImage(rightEnemy[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
-		} else if (dir == left_dir) {
-			g.drawImage(leftEnemy[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
-		}
-	}
+    public void render(Graphics g) {
+        if (dir == right_dir) {
+            g.drawImage(rightEnemy[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+        } else if (dir == left_dir) {
+            g.drawImage(leftEnemy[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+        }
+    }
 }
