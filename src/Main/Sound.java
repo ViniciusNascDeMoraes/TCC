@@ -1,19 +1,17 @@
 package Main;
 
-import java.io.File;
-
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-
+import java.io.File;
 
 
 public class Sound {
 
-	private static Clip clip;
-	private static AudioInputStream inputStream;
-	
-	public static synchronized void play(final String fileName) {        
+    private static Clip clip;
+    private static AudioInputStream inputStream;
+
+    public static synchronized void play(final String fileName) {
         new Thread(new Runnable() {
             public void run() {
                 try {
