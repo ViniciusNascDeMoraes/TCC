@@ -1,0 +1,9 @@
+# Build artifacts
+bin/
+
+# Generated documentation
+doc/
+
+# IDE configs (optional - uncomment if you want to ignore them)
+# .idea/
+# TCC.iml
