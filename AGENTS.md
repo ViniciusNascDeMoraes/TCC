@@ -2,7 +2,7 @@
 
 ## Project type
 
-Eclipse Java project targeting Java 1.8. No Maven, Gradle, or other build tool.
+IntelliJ IDEA project targeting Java 25. No Maven, Gradle, or other build tool.
 
 ## Build & run
 
