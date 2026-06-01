@@ -1,9 +1,18 @@
 # Build artifacts
-bin/
+/bin/
+/classes/
+/out/
+*.class
 
 # Generated documentation
-doc/
+/doc/
 
-# IDE configs (optional - uncomment if you want to ignore them)
-# .idea/
-# TCC.iml
+# Logs and JVM crash dumps
+*.log
+hs_err_pid*
+replay_pid*
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
