@@ -224,10 +224,14 @@ fn simpleOutline(glyph: []const u8, contours: usize, path: *Path, transform: Aff
     const instructions = try readU16(glyph, end_pts + contours * 2);
     var pos = end_pts + contours * 2 + 2 + instructions;
 
-    const pts = try path.gpa.alloc(GlyfPoint, points);
-    defer path.gpa.free(pts);
-    const flags = try path.gpa.alloc(u8, points);
-    defer path.gpa.free(flags);
+    // Buffers na pilha bastam para os glifos comuns; so os enormes alocam.
+    var pts_buf: [512]GlyfPoint = undefined;
+    var flags_buf: [512]u8 = undefined;
+    const on_stack = points <= pts_buf.len;
+    const pts = if (on_stack) pts_buf[0..points] else try path.gpa.alloc(GlyfPoint, points);
+    defer if (!on_stack) path.gpa.free(pts);
+    const flags = if (on_stack) flags_buf[0..points] else try path.gpa.alloc(u8, points);
+    defer if (!on_stack) path.gpa.free(flags);
 
     // Flags, com repeticao (bit 3).
     var i: usize = 0;
