@@ -175,7 +175,6 @@ public class World {
         Game.entities = new ArrayList<Entity>();
         Game.enemies = new ArrayList<Enemy>();
         Game.enemies02 = new ArrayList<Enemy02>();
-        Game.spritesheet = new Spritesheet("/spritesheet.png");
         Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
         Game.entities.add(Game.player);
         Game.world = new World("/" + LEVEL);
