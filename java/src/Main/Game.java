@@ -53,6 +53,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
     private Thread thread;
     private BufferedImage image;
     private boolean running, fim = false;
+    // Esc ainda segurado: a auto-repeticao da tecla nao alterna a pausa de novo.
+    private boolean escPressionado = false;
 
     public Game() {
 
@@ -520,6 +522,11 @@ public class Game extends Canvas implements Runnable, KeyListener {
     }
 
     public void keyPressed(KeyEvent e) {
+        boolean escRepetido = e.getKeyCode() == KeyEvent.VK_ESCAPE && escPressionado == true;
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            escPressionado = true;
+        }
+
         if (menu.stateInicio == true && gameOver == false) {
             if (e.getKeyCode() == KeyEvent.VK_W) {
                 menu.w = true;
@@ -546,8 +553,13 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 player.left = true;
             }
 
-            if (e.getKeyCode() == KeyEvent.VK_ESCAPE && gameOver == false) {
-                pause = true;
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE && gameOver == false && escRepetido == false) {
+                if (pause == true) {
+                    pause = false;
+                    optionAtual = 0;
+                } else {
+                    pause = true;
+                }
             }
 
             if (e.getKeyCode() == KeyEvent.VK_W && pause == true || gameOver == true) {
@@ -576,6 +588,10 @@ public class Game extends Canvas implements Runnable, KeyListener {
     }
 
     public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            escPressionado = false;
+        }
+
         if (menu.stateJogo == true) {
             if (e.getKeyCode() == KeyEvent.VK_W) {
                 player.up = false;

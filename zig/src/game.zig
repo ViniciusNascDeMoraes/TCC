@@ -103,6 +103,8 @@ pub const Game = struct {
     dialogo: bool = false,
     vacinado: bool = false,
     fim: bool = false,
+    /// Esc ainda segurado: a auto-repeticao da tecla nao alterna a pausa de novo.
+    esc_pressionado: bool = false,
     game_over: bool = false,
     /// `Enemy.escudo`, `Enemy02.escudo` e `Enemy03.escudo`.
     escudo: [3]bool = @splat(true),
@@ -391,6 +393,9 @@ pub const Game = struct {
     }
 
     pub fn keyPressed(self: *Game, key: c_int) void {
+        const esc_repetido = key == rl.KEY_ESCAPE and self.esc_pressionado;
+        if (key == rl.KEY_ESCAPE) self.esc_pressionado = true;
+
         if (self.menu.state_inicio and self.normal()) {
             if (key == rl.KEY_W) {
                 self.menu.w = true;
@@ -417,8 +422,13 @@ pub const Game = struct {
                 self.player.left = true;
             }
 
-            if (key == rl.KEY_ESCAPE and self.normal()) {
-                self.pause = true;
+            if (key == rl.KEY_ESCAPE and self.normal() and !esc_repetido) {
+                if (self.pause) {
+                    self.pause = false;
+                    self.option_atual = 0;
+                } else {
+                    self.pause = true;
+                }
             }
 
             if (key == rl.KEY_W and self.pause or self.game_over) {
@@ -446,6 +456,8 @@ pub const Game = struct {
     }
 
     pub fn keyReleased(self: *Game, key: c_int) void {
+        if (key == rl.KEY_ESCAPE) self.esc_pressionado = false;
+
         if (self.menu.state_jogo) {
             if (key == rl.KEY_W) {
                 self.player.up = false;
