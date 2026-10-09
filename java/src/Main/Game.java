@@ -240,9 +240,6 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 vacinado = false;
             }
 
-            System.out.println("Y: " + player.getY());
-            System.out.println("X: " + player.getX());
-
         } else if (pause == true && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
                 && Enemy03.state == "GAMENORMAL") {
             if (w == true) {
