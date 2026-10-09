@@ -24,7 +24,7 @@ pub fn main(init: std.process.Init) !void {
     defer audio.stop();
 
     var game: Game = undefined;
-    try game.init(init.gpa, io, &audio.mixer);
+    try game.init(init.gpa, io, init.environ_map, &audio.mixer);
     defer game.deinit();
 
     var pacer: Pacer = .init(io);

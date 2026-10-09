@@ -158,8 +158,8 @@ pub const Game = struct {
 
     const option_max = 1;
 
-    /// `mixer` recebe os pedidos de som; `io` le as fontes do sistema.
-    pub fn init(self: *Game, gpa: std.mem.Allocator, io: std.Io, mixer: *Mixer) !void {
+    /// `mixer` recebe os pedidos de som; `io` e `env` acham as fontes do sistema.
+    pub fn init(self: *Game, gpa: std.mem.Allocator, io: std.Io, env: *const std.process.Environ.Map, mixer: *Mixer) !void {
         const spritesheet: Spritesheet = try .load(gpa);
         errdefer spritesheet.unload(gpa);
         const screens: Screens = try .load(gpa);
@@ -168,7 +168,7 @@ pub const Game = struct {
         errdefer image.deinit(gpa);
         const frame: gfx.Canvas = try .init(gpa, widthfm, heightfm);
         errdefer frame.deinit(gpa);
-        const text: Text = try .load(gpa, io);
+        const text: Text = try .load(gpa, io, env);
         errdefer text.unload(gpa);
 
         self.* = .{
