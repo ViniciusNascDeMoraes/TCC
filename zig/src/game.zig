@@ -97,6 +97,8 @@ pub const Game = struct {
 
     level: i32 = 1,
     contador: i32 = 0,
+    /// Inimigos criados no mapa do nivel atual; no nivel 3 e preciso eliminar todos.
+    total_inimigos: i32 = 0,
     pause: bool = false,
     dialogo: bool = false,
     vacinado: bool = false,
@@ -318,7 +320,7 @@ pub const Game = struct {
                 self.vacinado = true;
             }
         } else if (self.fim or
-            self.player.getY() < 175 and self.player.getX() > 559 and self.player.getX() < 593 and self.level == 3 and self.contador > 21)
+            self.player.getY() < 175 and self.player.getX() > 559 and self.player.getX() < 593 and self.level == 3 and self.contador >= self.total_inimigos)
         {
             self.fim = true;
             gfx.fillScreen(gfx.blue);
@@ -353,7 +355,7 @@ pub const Game = struct {
             self.text.draw(txt_missao_texto4, .s20, 15, 30, gfx.black);
             self.text.draw(txt_missao_texto5, .s20, 15, 60, gfx.black);
         } else if (self.level == 3 and self.normal() and self.menu.state_jogo and self.player.getY() > 160) {
-            if (self.contador < 22) {
+            if (self.contador < self.total_inimigos) {
                 self.text.draw(txt_missao_texto6, .s23, 15, 30, gfx.white);
                 self.text.draw(txt_missao_texto7, .s23, 15, 60, gfx.white);
                 self.text.draw(txt_missao_texto8, .s23, 15, 100, gfx.white);
@@ -361,7 +363,7 @@ pub const Game = struct {
                 const contador = std.fmt.bufPrintZ(&buffer, "{d}", .{self.contador}) catch unreachable;
                 self.text.draw(contador, .s23, 275, 101, gfx.white);
             }
-            if (self.contador > 21 and !self.fim) {
+            if (self.contador >= self.total_inimigos and !self.fim) {
                 self.text.draw(txt_missao_texto9, .s20, 15, 30, gfx.white);
                 self.text.draw(txt_missao_texto10, .s20, 15, 60, gfx.white);
             }

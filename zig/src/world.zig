@@ -45,6 +45,8 @@ pub const World = struct {
             }
         }
 
+        // A lista so tem os inimigos deste mapa (`restartGame` a esvazia antes).
+        g.total_inimigos = @intCast(g.enemies.items.len);
         return .{ .width = @intCast(width), .height = @intCast(height), .tiles = tiles };
     }
 

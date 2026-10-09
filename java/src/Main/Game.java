@@ -29,6 +29,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static Player player;
 
     public static int contador = 0;
+    // Inimigos criados no mapa do nivel atual; no nivel 3 e preciso eliminar todos.
+    public static int totalInimigos = 0;
     public static World world;
     public static int widthfm = 0, heightfm = 0;
     public static Spritesheet spritesheet;
@@ -451,7 +453,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
             }
 
         } else if (fim == true
-                || player.getY() < 175 && player.getX() > 559 && player.getX() < 593 && LEVEL == 3 && contador > 21) {
+                || player.getY() < 175 && player.getX() > 559 && player.getX() < 593 && LEVEL == 3 && contador >= totalInimigos) {
             fim = true;
 
             g.clearRect(0, 0, Game.widthfm, Game.heightfm);
@@ -474,7 +476,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
             g.drawString(txt_missao_texto4, 15, 30);
             g.drawString(txt_missao_texto5, 15, 60);
         } else if (LEVEL == 3 && gameOver == false && menu.stateJogo == true && player.getY() > 160) {
-            if (Game.contador < 22) {
+            if (Game.contador < totalInimigos) {
                 g.setColor(Color.WHITE);
                 g.setFont(new Font("Bookman Old Style", Font.BOLD, 23));
                 g.drawString(txt_missao_texto6, 15, 30);
@@ -482,7 +484,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 g.drawString(txt_missao_texto8, 15, 100);
                 g.drawString("" + contador, 275, 101);
             }
-            if (Game.contador > 21 && fim == false) {
+            if (Game.contador >= totalInimigos && fim == false) {
                 g.setColor(Color.WHITE);
                 g.setFont(new Font("Bookman Old Style", Font.BOLD, 20));
                 g.drawString(txt_missao_texto9, 15, 30);

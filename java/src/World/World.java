@@ -158,6 +158,8 @@ public class World {
                     }
                 }
             }
+            // Todas as entidades menos o jogador sao os inimigos deste mapa.
+            Game.totalInimigos = Game.entities.size() - 1;
         } catch (IOException e) {
             e.printStackTrace();
         }
