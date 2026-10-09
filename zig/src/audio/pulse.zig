@@ -23,14 +23,22 @@ const target_latency = wav.sample_rate * wav.bytes_per_frame * 40 / 1000;
 /// O que a thread de audio precisa, preparado na thread principal (que tem
 /// acesso as variaveis de ambiente e aos arquivos).
 pub const Config = struct {
-    paths: [6][108]u8 = undefined,
-    path_lens: [6]usize = undefined,
+    paths: [max_servers + default_paths][108]u8 = undefined,
+    path_lens: [max_servers + default_paths]usize = undefined,
     count: usize = 0,
     cookie: [proto.cookie_len]u8 = @splat(0),
 
+    /// Sockets de PULSE_SERVER aceitos; o resto do espaco fica para os
+    /// sockets padrao, que sempre entram na lista.
+    const max_servers = 4;
+    const default_paths = 4;
+
     fn add(self: *Config, comptime fmt: []const u8, args: anytype) void {
-        if (self.count == self.paths.len) return;
-        const written = std.fmt.bufPrint(&self.paths[self.count], fmt, args) catch return;
+        std.debug.assert(self.count < self.paths.len);
+        const written = std.fmt.bufPrint(&self.paths[self.count], fmt, args) catch {
+            log.warn("caminho de socket longo demais, ignorado: " ++ fmt, args);
+            return;
+        };
         self.path_lens[self.count] = written.len;
         self.count += 1;
     }
@@ -48,6 +56,7 @@ pub fn prepare(gpa: std.mem.Allocator, io: std.Io, env: *const std.process.Envir
     // sao suportados: avisa e segue para os sockets locais.
     if (env.get("PULSE_SERVER")) |servers| {
         var it = std.mem.tokenizeAny(u8, servers, " \t");
+        var accepted: usize = 0;
         while (it.next()) |entry| {
             var server = entry;
             if (server.len > 0 and server[0] == '{') {
@@ -56,12 +65,18 @@ pub fn prepare(gpa: std.mem.Allocator, io: std.Io, env: *const std.process.Envir
             }
             if (std.mem.startsWith(u8, server, "unix:")) server = server[5..];
             if (server.len > 0 and server[0] == '/') {
+                if (accepted == Config.max_servers) {
+                    log.warn("PULSE_SERVER: so os {d} primeiros sockets sao usados; \"{s}\" ignorado", .{ Config.max_servers, entry });
+                    continue;
+                }
                 config.add("{s}", .{server});
+                accepted += 1;
             } else {
                 log.warn("PULSE_SERVER \"{s}\": so sockets Unix sao suportados; usando os sockets locais", .{entry});
             }
         }
     }
+    // Os sockets padrao (ate `default_paths`) sempre cabem.
     if (env.get("PULSE_RUNTIME_PATH")) |dir| config.add("{s}/native", .{dir});
     if (env.get("XDG_RUNTIME_DIR")) |dir| config.add("{s}/pulse/native", .{dir});
     config.add("/run/user/{d}/pulse/native", .{linux.getuid()});
