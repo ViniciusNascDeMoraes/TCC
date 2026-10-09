@@ -24,8 +24,8 @@ const World = world_mod.World;
 /// Idioma escolhido no menu inicial (o `Game.idioma` do Java).
 pub const Lang = enum { pt, en };
 
-/// Um texto em portugues e em ingles, como os pares `{ ..., ... }` do Java;
-/// `Game.tr` escolhe o do idioma atual.
+/// Um texto em portugues e em ingles (na ordem de `Lang`), como os pares
+/// `{ ..., ... }` do Java; `Game.tr` escolhe o do idioma atual.
 pub const Tr = [2][]const u8;
 
 const txtmenu1: Tr = .{ "Retornar ao jogo", "Resume game" };
@@ -43,57 +43,71 @@ const txt_missao_texto8: Tr = .{ "Inimigos eliminados: ", "Enemies eliminated: "
 const txt_missao_texto9: Tr = .{ "Todos os inimigos foram eliminados,", "All enemies have been eliminated," };
 const txt_missao_texto10: Tr = .{ "volte para casa!", "go back home!" };
 
-/// Imagens de tela inteira (960x640). As que tem texto desenhado na imagem
-/// existem em portugues e em ingles (`res/*_en.png`), escolhidas com `Game.tr`.
-pub const Screens = struct {
-    menu: [2]gfx.Image,
-    creditos: [2]gfx.Image,
-    morreu: gfx.Image,
-    imagem_fim: [2]gfx.Image,
-    tela_vacina: [2]gfx.Image,
-    vacinando: [4][2]gfx.Image,
+/// Telas de tela inteira (960x640) com texto desenhado na imagem: existem
+/// em portugues e em ingles (`res/*_en.png`).
+pub const Screen = enum { menu, creditos, imagem_fim, tela_vacina, vacinando, vacinando1, vacinando2, vacinando3 };
 
-    /// Pares (portugues, ingles), na ordem: menu, creditos, fim, vacina e os
-    /// quatro quadros de "vacinando".
-    const translated = [_][2][]const u8{
-        .{ assets.tela_menu, assets.tela_menu_en },
-        .{ assets.tela_creditos, assets.tela_creditos_en },
-        .{ assets.tela_fim, assets.tela_fim_en },
-        .{ assets.tela_vacina, assets.tela_vacina_en },
-        .{ assets.vacinando, assets.vacinando_en },
-        .{ assets.vacinando1, assets.vacinando1_en },
-        .{ assets.vacinando2, assets.vacinando2_en },
-        .{ assets.vacinando3, assets.vacinando3_en },
-    };
+const ScreenSet = std.EnumArray(Screen, gfx.Image);
+
+/// Os PNGs de cada tela em cada idioma.
+const screen_files = std.EnumArray(Lang, std.EnumArray(Screen, []const u8)).init(.{
+    .pt = .init(.{
+        .menu = assets.tela_menu,
+        .creditos = assets.tela_creditos,
+        .imagem_fim = assets.tela_fim,
+        .tela_vacina = assets.tela_vacina,
+        .vacinando = assets.vacinando,
+        .vacinando1 = assets.vacinando1,
+        .vacinando2 = assets.vacinando2,
+        .vacinando3 = assets.vacinando3,
+    }),
+    .en = .init(.{
+        .menu = assets.tela_menu_en,
+        .creditos = assets.tela_creditos_en,
+        .imagem_fim = assets.tela_fim_en,
+        .tela_vacina = assets.tela_vacina_en,
+        .vacinando = assets.vacinando_en,
+        .vacinando1 = assets.vacinando1_en,
+        .vacinando2 = assets.vacinando2_en,
+        .vacinando3 = assets.vacinando3_en,
+    }),
+});
+
+/// Imagens de tela inteira. As telas de um idioma so sao decodificadas
+/// quando ele e usado (o jogo comeca em portugues).
+pub const Screens = struct {
+    morreu: gfx.Image,
+    sets: std.EnumArray(Lang, ?ScreenSet),
 
     fn load(gpa: std.mem.Allocator) !Screens {
         const morreu = try gfx.loadImage(gpa, assets.game_over);
         errdefer morreu.deinit(gpa);
-        var pairs: [translated.len][2]gfx.Image = undefined;
-        for (translated, 0..) |files, i| {
-            errdefer for (pairs[0..i]) |pair| {
-                for (pair) |image| image.deinit(gpa);
-            };
-            pairs[i][0] = try gfx.loadImage(gpa, files[0]);
-            errdefer pairs[i][0].deinit(gpa);
-            pairs[i][1] = try gfx.loadImage(gpa, files[1]);
+        var self: Screens = .{ .morreu = morreu, .sets = .initFill(null) };
+        try self.loadLang(gpa, .pt);
+        return self;
+    }
+
+    fn loadLang(self: *Screens, gpa: std.mem.Allocator, lang: Lang) !void {
+        if (self.sets.get(lang) != null) return;
+        const files = screen_files.get(lang);
+        const screens = std.enums.values(Screen);
+        var set: ScreenSet = .initUndefined();
+        for (screens, 0..) |screen, i| {
+            errdefer for (screens[0..i]) |done| set.get(done).deinit(gpa);
+            set.set(screen, try gfx.loadImage(gpa, files.get(screen)));
         }
-        return .{
-            .menu = pairs[0],
-            .creditos = pairs[1],
-            .morreu = morreu,
-            .imagem_fim = pairs[2],
-            .tela_vacina = pairs[3],
-            .vacinando = pairs[4..8].*,
-        };
+        self.sets.set(lang, set);
+    }
+
+    fn get(self: *const Screens, lang: Lang, screen: Screen) gfx.Image {
+        return self.sets.get(lang).?.get(screen);
     }
 
     fn unload(self: Screens, gpa: std.mem.Allocator) void {
-        for (self.menu ++ self.creditos ++ [_]gfx.Image{self.morreu} ++ self.imagem_fim ++ self.tela_vacina) |image| {
-            image.deinit(gpa);
-        }
-        for (self.vacinando) |pair| {
-            for (pair) |image| image.deinit(gpa);
+        self.morreu.deinit(gpa);
+        for (self.sets.values) |maybe_set| {
+            const set = maybe_set orelse continue;
+            for (set.values) |image| image.deinit(gpa);
         }
     }
 };
@@ -196,9 +210,20 @@ pub const Game = struct {
         self.spritesheet.unload(self.gpa);
     }
 
-    /// O texto (ou a imagem) do idioma atual.
-    pub fn tr(self: *const Game, pair: anytype) @TypeOf(pair[0]) {
+    /// O texto no idioma atual.
+    pub fn tr(self: *const Game, pair: Tr) []const u8 {
         return pair[@intFromEnum(self.lang)];
+    }
+
+    /// Uma das telas com texto, no idioma atual.
+    pub fn screen(self: *const Game, which: Screen) gfx.Image {
+        return self.screens.get(self.lang, which);
+    }
+
+    /// Troca o idioma, decodificando as telas dele na primeira vez.
+    pub fn setLang(self: *Game, lang: Lang) !void {
+        try self.screens.loadLang(self.gpa, lang);
+        self.lang = lang;
     }
 
     fn normal(self: Game) bool {
@@ -231,7 +256,7 @@ pub const Game = struct {
 
     pub fn tick(self: *Game) !void {
         if (self.menu.state_inicio or self.menu.state_creditos and !self.pause and self.normal()) {
-            self.menu.tick(self);
+            try self.menu.tick(self);
         } else if (self.menu.state_jogo and !self.pause and self.normal() and !self.dialogo and !self.fim) {
             self.player.tick(self);
             // Um inimigo eliminado sai da lista sem fazer o seguinte perder o tick.
@@ -341,7 +366,7 @@ pub const Game = struct {
             self.menu.render(self);
         } else if (self.fim) {
             gfx.fillScreen(self.frame, gfx.blue);
-            gfx.drawScreen(self.frame, self.tr(self.screens.imagem_fim));
+            gfx.drawScreen(self.frame, self.screen(.imagem_fim));
         } else if (self.pause and self.normal()) {
             self.renderOptions(self.tr(txtmenu1), self.tr(txtmenu2), gfx.white);
         } else if (self.game_over) {
@@ -355,19 +380,19 @@ pub const Game = struct {
             if (self.volta < 3) {
                 // Cada imagem fica 39 quadros; os quadros 40, 80, 120 e 160 ficam so azuis.
                 if (self.time < 40) {
-                    gfx.drawScreen(self.frame, self.tr(self.screens.vacinando[0]));
+                    gfx.drawScreen(self.frame, self.screen(.vacinando));
                 } else if (self.time > 40 and self.time < 80) {
-                    gfx.drawScreen(self.frame, self.tr(self.screens.vacinando[1]));
+                    gfx.drawScreen(self.frame, self.screen(.vacinando1));
                 } else if (self.time > 80 and self.time < 120) {
-                    gfx.drawScreen(self.frame, self.tr(self.screens.vacinando[2]));
+                    gfx.drawScreen(self.frame, self.screen(.vacinando2));
                 } else if (self.time > 120 and self.time < 160) {
-                    gfx.drawScreen(self.frame, self.tr(self.screens.vacinando[3]));
+                    gfx.drawScreen(self.frame, self.screen(.vacinando3));
                 } else if (self.time > 160) {
                     self.time = 0;
                     self.volta += 1;
                 }
             } else if (self.volta >= 3 and self.volta < 5) {
-                gfx.drawScreen(self.frame, self.tr(self.screens.tela_vacina));
+                gfx.drawScreen(self.frame, self.screen(.tela_vacina));
 
                 if (self.time > 100) {
                     self.volta += 1;

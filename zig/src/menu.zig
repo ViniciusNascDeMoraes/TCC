@@ -32,7 +32,7 @@ pub const Menu = struct {
     const option_max = 3;
     const limite_volta = 3;
 
-    pub fn tick(self: *Menu, g: *Game) void {
+    pub fn tick(self: *Menu, g: *Game) !void {
         if (self.state_inicio) {
             if (self.w) {
                 g.sounds.play(.menu);
@@ -56,7 +56,7 @@ pub const Menu = struct {
                     g.quit = true;
                 } else if (self.option_atual == 2) {
                     // Troca o idioma; o menu continua aberto, ja no outro idioma.
-                    g.lang = if (g.lang == .pt) .en else .pt;
+                    try g.setLang(if (g.lang == .pt) .en else .pt);
                 } else if (self.option_atual == 1) {
                     self.state_loading = false;
                     self.state_inicio = false;
@@ -87,7 +87,7 @@ pub const Menu = struct {
         const cy = Game.heightfm / 2;
 
         if (self.state_inicio) {
-            gfx.drawScreen(g.frame, g.tr(g.screens.menu));
+            gfx.drawScreen(g.frame, g.screen(.menu));
 
             const tam1 = g.text.width(g.tr(txtmenu1), .s40);
             g.text.draw(g.frame, g.tr(txtmenu1), .s40, cx - @divTrunc(tam1, 2), cy - 50, gfx.black);
@@ -106,7 +106,7 @@ pub const Menu = struct {
                 else => {},
             }
         } else if (self.state_creditos) {
-            gfx.drawScreen(g.frame, g.tr(g.screens.creditos));
+            gfx.drawScreen(g.frame, g.screen(.creditos));
 
             const tam3 = g.text.width(g.tr(txtcred1), .s40);
             g.text.draw(g.frame, g.tr(txtcred1), .s40, cx - @divTrunc(tam3, 2), cy + 150, gfx.black);
