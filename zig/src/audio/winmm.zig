@@ -1,5 +1,5 @@
 //! Saida de audio no Windows pelo waveOut (winmm.dll), declarado aqui mesmo
-//! em Zig. Quatro buffers de 20 ms circulam entre a thread de audio e o
+//! em Zig. Quatro buffers de 10 ms circulam entre a thread de audio e o
 //! driver: cada um que volta (WHDR_DONE) e preenchido de novo pelo mixer.
 
 const std = @import("std");
@@ -51,8 +51,8 @@ const CALLBACK_EVENT = 0x00050000;
 const WHDR_DONE = 0x1;
 
 const buffer_count = 4;
-/// 20 ms por buffer.
-const buffer_frames = wav.sample_rate / 50;
+/// 10 ms por buffer: um som pedido sai em no maximo ~40 ms, como no Linux.
+const buffer_frames = wav.sample_rate / 100;
 
 /// O waveOut nao precisa de nada preparado na thread principal.
 pub const Config = struct {};
