@@ -236,7 +236,12 @@ pub const Window = struct {
         try g.u32_(0);
         g.end();
 
-        try self.enableDetectableRepeat();
+        // Um servidor que anuncia o XKB mas recusa estes requests continua
+        // funcionando: a repeticao falsa e filtrada por `isFakeRelease`.
+        self.enableDetectableRepeat() catch |err| switch (err) {
+            error.RequestFailed => self.detectable_repeat = false,
+            else => return err,
+        };
         try self.loadKeymap();
 
         var map = try self.request(proto.opcode.map_window, 0);
