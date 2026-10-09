@@ -56,7 +56,7 @@ XWayland) e com o PulseAudio/PipeWire pelos sockets deles; sem servidor de áudi
 o jogo roda sem som. No Windows ele usa só as DLLs do próprio sistema.
 
 O texto usa a fonte "Bookman Old Style" se ela estiver instalada (vem com o
-Microsoft Office). Sem ela, usa o clone livre URW Bookman no Linux (pacote
+Microsoft Office), na pasta de fontes do Windows ou do usuário. Sem ela, usa o clone livre URW Bookman no Linux (pacote
 `fonts-urw-base35`) e, se também não houver, Arial/DejaVu Sans/Liberation Sans em negrito,
 como o Java faria. Sem nenhuma dessas, usa uma fonte bitmap 8x8 embutida (font8x8, domínio público).
 

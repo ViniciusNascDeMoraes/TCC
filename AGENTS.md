@@ -39,7 +39,7 @@
   - OS layer: `platform.zig` (`Window`, `Key`, `KeyQueue`) with `platform/x11.zig` + `platform/x11_proto.zig` (Linux) and `platform/win32.zig` (Windows); `audio.zig` with `audio/pulse.zig` + `audio/pulse_proto.zig` (Linux) and `audio/winmm.zig` (Windows); `linux_sys.zig` (raw socket syscalls).
 - `src/tests.zig` is the single test root (`zig build test`); add new pure modules there. It also compiles (but never runs) the window and audio backends of the target OS.
 - Keep OS calls (`platform/x11.zig`, `platform/win32.zig`, `audio/*.zig` backends, `linux_sys.zig`) out of the pure modules (`rules`, `camera`, `canvas`, `png`, `wav`, `mixer`, `raster`, `ttf`, `cff`, `glyphs`, `bitmap_font`, `*_proto`) so `zig build test` runs without a window or audio device.
-- Text uses "Bookman Old Style" Bold from the system font folder when present (not redistributable), then the free URW Bookman Demi clone (Linux, `fonts-urw-base35`), then Arial/DejaVu Sans/Liberation Sans Bold (Java's "Dialog" fallback), then the embedded public-domain font8x8. A font with an unsupported feature (e.g. CFF `seac`, TrueType point-matched composites) is skipped as a whole.
+- Text uses "Bookman Old Style" Bold (`BOOKOSB.TTF`, not redistributable) when present in `%WINDIR%\Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, `$XDG_DATA_HOME/fonts` (or `~/.local/share/fonts`) or `~/.fonts`, then the free URW Bookman Demi clone (Linux, `fonts-urw-base35`), then Arial/DejaVu Sans/Liberation Sans Bold (Java's "Dialog" fallback), then the embedded public-domain font8x8. A font with an unsupported feature (e.g. CFF `seac`, TrueType point-matched composites) is skipped as a whole.
 
 ## Gameplay Data
 
