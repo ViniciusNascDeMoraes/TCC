@@ -7,12 +7,14 @@ Jogo 2D do TCC em duas versões independentes, uma em cada pasta:
 | [`java/`](java/) | Original | Java 25, AWT/Swing |
 | [`zig/`](zig/) | Port fiel da versão Java | Zig 0.16 puro, sem dependências |
 
-As duas versões têm a mesma jogabilidade, as mesmas fases, telas e sons.
+As duas versões têm a mesma jogabilidade, as mesmas fases, telas e sons, em
+português e em inglês: a opção "Idioma: Português" / "Language: English" do menu
+inicial troca o idioma na hora (o jogo sempre abre em português).
 
 ## Controles
 
 - `W` / `S`: navegar nos menus
-- `Enter`: selecionar
+- `Enter`: selecionar (na opção de idioma, alterna entre português e inglês)
 - `Esc`: pausar e despausar / voltar dos créditos
 - `Enter` ou `Esc` na tela final: voltar ao menu inicial
 - `W` `A` `S` `D`: mover o personagem

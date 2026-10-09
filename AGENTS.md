@@ -6,6 +6,8 @@
   - `java/`: the original Java AWT/Swing game. Entry point `Main.Game.main(String[])`; `Main.Game` owns the window, loop, rendering, input, and global game state.
   - `zig/`: a faithful port to pure Zig 0.16 with no dependencies (own X11/Win32 window, PulseAudio/waveOut audio, PNG/WAV/font decoders and software rendering). Entry point `zig/src/main.zig`; `zig/src/game.zig` mirrors `Main.Game`.
 - Keep gameplay identical between the two. When changing rules, timings, texts, or maps in one, port the change to the other.
+- Both versions are in Portuguese and English. Every on-screen text is a `{ português, english }` pair next to where it is drawn (Java: `String[]` indexed by `Game.idioma`; Zig: `Tr` picked by `Game.tr` with `Game.lang`); add or change both languages together. The main menu option "Idioma: Português" / "Language: English" toggles the language; the game always starts in Portuguese.
+- Screens with text drawn in the image have an English copy named `<Name>_en.png` in both `java/res/` and `zig/res/` (`GameOver.png` is shared). They were made by erasing the Portuguese lines with the background color (9, 156, 147) and drawing the English in URW Bookman Light with a 0.5 px stroke (close to Bookman Old Style Regular), at the same size, baseline and center.
 - No Maven, Gradle, wrapper scripts, CI workflows, lint, or codegen config exist. The Zig project has unit tests for its pure logic.
 - Java IntelliJ metadata: `.idea/` stays at the repo root and points to `java/TCC.iml`, which marks `java/src/` and `java/res/` as source roots, outputs to `java/bin/`, and targets JDK 25.
 - Do not assume Eclipse files exist; there is no `.classpath` or `.project` in the current repo.
@@ -49,7 +51,8 @@
 ## Manual Verification
 
 - There are no automated gameplay tests; verify by launching either game and exercising it manually (on Linux, `xdotool` can drive the Zig game under Xvfb).
-- Controls: `W`/`S` navigate menus, `Enter` selects, `Esc` pauses/unpauses or returns from credits, `Enter`/`Esc` on the end screen returns to the main menu, and in-game movement is `WASD`.
+- Controls: `W`/`S` navigate menus, `Enter` selects (on the language option it toggles Portuguese/English), `Esc` pauses/unpauses or returns from credits, `Enter`/`Esc` on the end screen returns to the main menu, and in-game movement is `WASD`.
+- Under Xvfb without a window manager, do not move the focus of the Java window with `xdotool windowfocus`: AWT receives keys through its own focus proxy window, which already has the focus. The Zig window needs `windowfocus`.
 
 ## Git Workflow
 
