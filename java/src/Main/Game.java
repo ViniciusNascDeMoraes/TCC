@@ -25,9 +25,6 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static BufferedImage Menu, Creditos, Morreu, ImagemFim, TelaVacina, Vacinando, Vacinando1, Vacinando2, Vacinando3;
 
     public static List<Entity> entities;
-    public static List<Enemy> enemies;
-    public static List<Enemy02> enemies02;
-    public static List<Enemy03> enemies03;
 
     public static Player player;
 
@@ -35,26 +32,22 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static World world;
     public static int widthfm = 0, heightfm = 0;
     public static Spritesheet spritesheet;
-    public static int tam1, tam2, tam3, tam4, tamtitulo, missao_texto, tam_vacina1, tam_vacina2, tam_vacina3,
-            tam_vacina6, tam_vacina4, tam_vacina5, tamtelafim, tamtelafim2;
+    public static int tam1, tam2;
     public static String txtmenu1 = "Retornar ao jogo", txtmenu2 = "Sair do jogo", txtgo1 = "Reiniciar a fase",
-            txtgo2 = "Sair do jogo", txttitulogo = "GAME OVER";
-    public static String tam5, tam6, tamtitulo2;
+            txtgo2 = "Sair do jogo";
     public static String txt_missao_texto = "Chegue no hospital", txt_missao_texto1 = "para se vacinar!",
             txt_missao_texto3 = "Dica: Desvie das bactérias.", txt_missao_texto4 = "Vá para a área amarela",
             txt_missao_texto5 = "para se vacinar", txt_missao_texto6 = "Utilize seu escudo para ",
             txt_missao_texto7 = "eliminar todos os vírus e bactérias", txt_missao_texto8 = "Inimigos eliminados: ",
-            txt_missao_texto9 = "Todos os inimigos foram eliminados,", txt_missao_texto10 = "volte para casa!",
-            vacina1 = "VACINANDO", vacina2 = "VACINANDO.", vacina3 = "VACINANDO..", vacina4 = "VACINANDO...",
-            vacina5 = "AGORA VOCÊ ESTÁ IMUNE", vacina6 = "AOS VÍRUS E BACTÉRIAS", telafim = "VOCÊ CHEGOU AO FIM!", telafim2 = "Obrigado por jogar nosso jogo";
+            txt_missao_texto9 = "Todos os inimigos foram eliminados,", txt_missao_texto10 = "volte para casa!";
     public static boolean pause = false, dialogo = false, vacinado = false, gameOver = false;
-    public static int LEVEL = 1, MAX_LEVEL = 2;
+    public static int LEVEL = 1;
     // Menus de pausa e de game over: 0 = primeira opcao, 1 = segunda.
     public int optionAtual = 0;
     public int optionMax = 1;
     public boolean w = false, s = false, enter = false;
     public Menu menu;
-    public int time, volta, limiteVolta = 3;
+    public int time, volta;
     private Thread thread;
     private BufferedImage image;
     private boolean running, fim = false;
@@ -134,9 +127,6 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
         spritesheet = new Spritesheet("/Spritesheet.png");
         entities = new ArrayList<Entity>();
-        enemies = new ArrayList<Enemy>();
-        enemies02 = new ArrayList<Enemy02>();
-        enemies03 = new ArrayList<Enemy03>();
         player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
         entities.add(player);
         world = new World("/level1.png");

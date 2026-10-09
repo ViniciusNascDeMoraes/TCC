@@ -14,7 +14,7 @@ public class Enemy03 extends Entity {
     public static boolean escudo = true;
     public int right_dir = 0, left_dir = 1;
     public int dir = right_dir;
-    private int maskx = 6, masky = 3, maskw = 8, maskh = 12;
+    private final int maskx = 6, masky = 3, maskw = 8, maskh = 12;
     private double speed = 1.5;
     private BufferedImage[] rightEnemy;
     private BufferedImage[] leftEnemy;
@@ -56,10 +56,6 @@ public class Enemy03 extends Entity {
 
     public void tick() {
 
-        maskx = 6;
-        masky = 3;
-        maskw = 8;
-        maskh = 12;
         moved = false;
 
         if (this.isCollidingWithPlayer() == false) {
@@ -71,7 +67,6 @@ public class Enemy03 extends Entity {
 
             escudo = false;
             Game.entities.remove(this);
-            Game.enemies03.remove(this);
 
             Game.contador++;
         }

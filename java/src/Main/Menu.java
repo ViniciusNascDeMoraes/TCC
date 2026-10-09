@@ -10,8 +10,7 @@ public class Menu {
 
     public String txtmenu1 = "Novo jogo", txtmenu2 = "Créditos",
             txtmenu3 = "Sair";
-    public String txttitulocred = "Desenvolvido por:",
-            txtcred1 = "Voltar";
+    public String txtcred1 = "Voltar";
     public boolean w = false, s = false, enter = false;
     public boolean stateInicio = true, stateCreditos = false, stateJogo = false, stateLoading = false;
     public int time, volta, limiteVolta = 3;
