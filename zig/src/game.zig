@@ -428,8 +428,12 @@ pub const Game = struct {
 
             if (key == rl.KEY_ESCAPE and self.normal() and !esc_repetido) {
                 if (self.pause) {
+                    // Descarta W/S/Enter apertados no menu de pausa e ainda nao processados.
                     self.pause = false;
                     self.option_atual = 0;
+                    self.w = false;
+                    self.s = false;
+                    self.enter = false;
                 } else {
                     self.pause = true;
                 }

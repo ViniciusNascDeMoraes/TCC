@@ -555,8 +555,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
             if (e.getKeyCode() == KeyEvent.VK_ESCAPE && gameOver == false && escRepetido == false) {
                 if (pause == true) {
+                    // Descarta W/S/Enter apertados no menu de pausa e ainda nao processados.
                     pause = false;
                     optionAtual = 0;
+                    w = false;
+                    s = false;
+                    enter = false;
                 } else {
                     pause = true;
                 }
