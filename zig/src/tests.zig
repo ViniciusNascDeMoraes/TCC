@@ -5,5 +5,6 @@ test {
     _ = @import("rules.zig");
     _ = @import("camera.zig");
     _ = @import("canvas.zig");
+    _ = @import("png.zig");
     _ = @import("ttf.zig");
 }
