@@ -42,18 +42,28 @@ pub const KeyQueue = struct {
     len: usize = 0,
     held: std.EnumSet(Key) = .initEmpty(),
 
+    /// Com a fila cheia, um evento novo so entra tirando um mais antigo,
+    /// primeiro uma repeticao. Uma soltura sempre entra (perde-la deixaria a
+    /// tecla presa no jogo), tirando se preciso um aperto ou a soltura mais
+    /// antiga; repeticoes novas e apertos sem espaco sao descartados.
     fn push(self: *KeyQueue, event: KeyEvent) void {
         if (self.len == self.events.len) {
-            // Fila cheia: descarta repeticoes, nunca apertos e solturas.
             if (event.action == .repeat) return;
-            const i = for (self.events[0..self.len], 0..) |e, i| {
-                if (e.action == .repeat) break i;
-            } else return;
+            var victim = self.oldest(.repeat);
+            if (victim == null and event.action == .release) victim = self.oldest(.press) orelse 0;
+            const i = victim orelse return;
             std.mem.copyForwards(KeyEvent, self.events[i .. self.len - 1], self.events[i + 1 .. self.len]);
             self.len -= 1;
         }
         self.events[self.len] = event;
         self.len += 1;
+    }
+
+    fn oldest(self: *const KeyQueue, action: KeyEvent.Action) ?usize {
+        for (self.events[0..self.len], 0..) |e, i| {
+            if (e.action == action) return i;
+        }
+        return null;
     }
 
     /// Tecla apertada; se ja estava apertada e uma repeticao.
@@ -125,4 +135,20 @@ test "fila cheia descarta repeticoes primeiro" {
     try testing.expectEqual(@as(usize, 128), events.len);
     try testing.expectEqual(KeyEvent.Action.press, events[0].action);
     try testing.expectEqual(KeyEvent.Action.release, events[events.len - 1].action);
+}
+
+test "fila cheia nunca perde solturas" {
+    var q: KeyQueue = .{};
+    for (0..64) |_| {
+        q.down(.w);
+        q.up(.w);
+    }
+    // Sem espaco nem repeticoes: o aperto de D e descartado, a soltura entra
+    // no lugar do aperto mais antigo.
+    q.down(.d);
+    q.up(.d);
+    const events = q.take();
+    try testing.expectEqual(@as(usize, 128), events.len);
+    try testing.expectEqual(KeyEvent{ .key = .w, .action = .release }, events[0]);
+    try testing.expectEqual(KeyEvent{ .key = .d, .action = .release }, events[127]);
 }
