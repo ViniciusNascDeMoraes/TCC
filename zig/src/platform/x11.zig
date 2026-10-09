@@ -43,6 +43,8 @@ pub const Window = struct {
     keymap_stale: bool = false,
     /// XKB entrega a repeticao automatica sem os KeyRelease falsos.
     detectable_repeat: bool = false,
+    /// Codigo dos eventos do XKB, quando a extensao esta em uso.
+    xkb_event: ?u8 = null,
     queue: platform.KeyQueue = .{},
     close_requested: bool = false,
     /// Requests ainda nao enviados.
@@ -267,12 +269,25 @@ pub const Window = struct {
         const ext = try self.waitReply(self.seq);
         if (ext[8] == 0) return;
         const xkb = ext[9];
+        const xkb_event = ext[10];
 
         var use = try self.request(xkb, 0); // XkbUseExtension 1.0
         try use.u16_(1);
         try use.u16_(0);
         use.end();
         if ((try self.waitReply(self.seq))[1] == 0) return;
+
+        // Com o XKB em uso o servidor nao manda mais o MappingNotify do
+        // protocolo basico: a troca de layout chega como evento do XKB.
+        var select = try self.request(xkb, 1); // XkbSelectEvents
+        try select.u16_(0x0100); // teclado principal
+        try select.u16_(0x3); // NewKeyboardNotify | MapNotify
+        try select.u16_(0); // clear
+        try select.u16_(0x1); // todos os detalhes do NewKeyboardNotify
+        try select.u16_(0xFF); // todas as partes do mapa no MapNotify
+        try select.u16_(0xFF);
+        select.end();
+        self.xkb_event = xkb_event;
 
         var flags = try self.request(xkb, 21); // XkbPerClientFlags
         try flags.u16_(0x0100); // teclado principal
@@ -435,6 +450,13 @@ pub const Window = struct {
     }
 
     fn handleEvent(self: *Window, packet: []const u8) Error!void {
+        if (self.xkb_event) |code| {
+            // NewKeyboardNotify (0) ou MapNotify (1): o layout mudou.
+            if (packet[0] & 0x7F == code) {
+                if (packet[1] <= 1) self.keymap_stale = true;
+                return;
+            }
+        }
         switch (packet[0] & 0x7F) {
             proto.event.key_press => if (self.keymap[packet[1]]) |key| self.queue.down(key),
             proto.event.key_release => if (self.keymap[packet[1]]) |key| {
