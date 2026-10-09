@@ -113,6 +113,12 @@ pub fn pollIn(fd: i32, timeout_ms: i32) Error!bool {
     }
 }
 
+/// Dorme `ms` milissegundos.
+pub fn sleepMs(ms: u32) void {
+    var ts: linux.timespec = .{ .sec = ms / 1000, .nsec = @as(isize, ms % 1000) * std.time.ns_per_ms };
+    while (interrupted(linux.nanosleep(&ts, &ts))) {}
+}
+
 /// Nome desta maquina (usado para achar o cookie do X11).
 pub fn hostname(buf: *[65]u8) []const u8 {
     var uts: linux.utsname = undefined;

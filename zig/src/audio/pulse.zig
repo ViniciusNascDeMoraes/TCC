@@ -81,21 +81,37 @@ pub fn prepare(gpa: std.mem.Allocator, io: std.Io, env: *const std.process.Envir
     return config;
 }
 
-/// Corpo da thread de audio: termina quando `running` vira falso ou a
-/// conexao cai.
+/// Corpo da thread de audio: toca enquanto `running` for verdadeiro. Se o
+/// servidor ainda nao existe ou cai (reiniciado, stream encerrado), tenta de
+/// novo a cada 2 s, e o som volta sem reiniciar o jogo.
 pub fn run(config: *const Config, mixer: *Mixer, running: *const std.atomic.Value(bool)) void {
-    var conn: Connection = .{ .running = running };
-    conn.play(config, mixer) catch |err| switch (err) {
-        error.Stopped => {},
-        error.NoServer => log.warn("sem servidor PulseAudio/PipeWire: o jogo fica sem som", .{}),
-        else => log.warn("audio interrompido: {s}", .{@errorName(err)}),
-    };
-    if (conn.fd >= 0) linux_sys.close(conn.fd);
+    var failed = false;
+    while (running.load(.acquire)) {
+        var conn: Connection = .{ .running = running, .failed_before = failed };
+        const result = conn.play(config, mixer);
+        if (conn.fd >= 0) linux_sys.close(conn.fd);
+        // Avisa uma vez por queda, nao a cada nova tentativa.
+        if (conn.streaming) failed = false;
+        result catch |err| if (err != error.Stopped and !failed) {
+            failed = true;
+            switch (err) {
+                error.NoServer => log.warn("sem servidor PulseAudio/PipeWire: o jogo fica sem som ate ele aparecer", .{}),
+                else => log.warn("audio interrompido ({s}); tentando reconectar", .{@errorName(err)}),
+            }
+        };
+
+        var waited: u32 = 0;
+        while (waited < 20 and running.load(.acquire)) : (waited += 1) linux_sys.sleepMs(100);
+    }
 }
 
 const Connection = struct {
     fd: i32 = -1,
     running: *const std.atomic.Value(bool),
+    /// A tentativa anterior falhou: avisa quando o audio voltar.
+    failed_before: bool,
+    /// O stream chegou a ser criado.
+    streaming: bool = false,
     channel: u32 = 0,
     /// Bytes de audio que o servidor pediu e ainda nao foram enviados.
     requested: usize = 0,
@@ -130,6 +146,9 @@ const Connection = struct {
         self.channel = try reply.u32_();
         _ = try reply.u32_(); // indice do sink input
         self.requested += try reply.u32_();
+        self.streaming = true;
+        if (self.failed_before) log.info("audio reconectado", .{});
+        mixer.reset();
 
         var samples: [2048 * wav.channels]i16 = undefined;
         while (true) {

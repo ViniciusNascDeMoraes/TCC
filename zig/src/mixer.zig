@@ -36,6 +36,14 @@ pub const Mixer = struct {
         _ = self.pending[id].fetchAdd(1, .release);
     }
 
+    /// Esquece pedidos e vozes em andamento (usado ao abrir um stream novo,
+    /// para os sons pedidos enquanto nao havia audio nao tocarem atrasados).
+    /// So a thread de audio chama.
+    pub fn reset(self: *Mixer) void {
+        for (self.pending[0..self.sounds.len]) |*p| _ = p.swap(0, .acquire);
+        self.voices = @splat(@splat(.{}));
+    }
+
     fn startPending(self: *Mixer) void {
         for (0..self.sounds.len) |id| {
             const requests = @min(self.pending[id].swap(0, .acquire), copies);
@@ -131,6 +139,17 @@ test "buffers maiores que um bloco" {
     mixer.render(&out);
     try testing.expectEqualSlices(i16, samples[4096..], out[0 .. samples.len - 4096]);
     try testing.expectEqual(@as(i16, 0), out[samples.len - 4096]);
+}
+
+test "reset descarta pedidos e vozes" {
+    var mixer: Mixer = .init(&.{pcmOf(&.{ 1, 1, 2, 2 })});
+    mixer.play(0);
+    var out: [2]i16 = undefined;
+    mixer.render(&out);
+    mixer.play(0);
+    mixer.reset();
+    mixer.render(&out);
+    try testing.expectEqualSlices(i16, &.{ 0, 0 }, &out);
 }
 
 test "o mesmo som sobrepoe ate quatro vozes" {
