@@ -32,7 +32,7 @@ pub const World = struct {
                 const y: i32 = @intCast(yy * rules.tile_size);
 
                 tiles[index] = rules.defaultTile(g.level);
-                switch (rules.classifyPixel(g.level, rules.argb(color.r, color.g, color.b, color.a))) {
+                switch (rules.classifyPixel(g.level, color.argb())) {
                     .tile => |tile| tiles[index] = tile,
                     .player => {
                         g.player.setX(x);

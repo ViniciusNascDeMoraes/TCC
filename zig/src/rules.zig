@@ -180,11 +180,6 @@ pub fn classifyPixel(level: i32, pixel: u32) Cell {
     };
 }
 
-/// Monta o valor ARGB que o `BufferedImage.getRGB` do Java devolveria.
-pub fn argb(r: u8, g: u8, b: u8, a: u8) u32 {
-    return @as(u32, a) << 24 | @as(u32, r) << 16 | @as(u32, g) << 8 | b;
-}
-
 /// `World.place_free`: testa os quatro cantos de um quadrado 16x16.
 /// O indice e calculado como no Java (`x + y * width`); um indice fora do
 /// array, que no Java lancaria excecao, conta como bloqueado.
@@ -237,7 +232,6 @@ test "cores do nivel viram os mesmos tiles do Java" {
     try std.testing.expectEqual(Cell.player, classifyPixel(2, 0xFF0026FF));
     // Casa so existe no nivel 3.
     try std.testing.expectEqual(Cell.none, classifyPixel(1, 0xFFD6FFCC));
-    try std.testing.expectEqual(@as(u32, 0xFF007F0E), argb(0x00, 0x7F, 0x0E, 0xFF));
 }
 
 test "solidos de place_free" {
