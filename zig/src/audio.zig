@@ -1,8 +1,9 @@
 //! Audio do jogo: o mixer e a thread que entrega o som ao sistema.
 //!
 //! Cada sistema tem seu backend, sem bibliotecas: o protocolo do PulseAudio
-//! (e do PipeWire) no Linux. Se o sistema nao tiver audio, a thread termina
-//! e os sons simplesmente nao tocam, como o "play sound error" do Java.
+//! (e do PipeWire) no Linux e o waveOut no Windows. Se o sistema nao tiver
+//! audio, a thread termina e os sons simplesmente nao tocam, como o
+//! "play sound error" do Java.
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -11,7 +12,8 @@ const Mixer = @import("mixer.zig").Mixer;
 
 const backend = switch (builtin.os.tag) {
     .linux => @import("audio/pulse.zig"),
-    else => @compileError("sistema nao suportado: so Linux (PulseAudio)"),
+    .windows => @import("audio/winmm.zig"),
+    else => @compileError("sistema nao suportado: so Linux (PulseAudio) e Windows (waveOut)"),
 };
 
 const log = std.log.scoped(.audio);

@@ -2,7 +2,6 @@
 //! dispositivo de audio.
 
 const std = @import("std");
-const builtin = @import("builtin");
 
 test {
     _ = @import("rules.zig");
@@ -20,8 +19,6 @@ test {
     _ = @import("platform/x11_proto.zig");
     _ = @import("audio/pulse_proto.zig");
     // Os backends nao rodam nos testes, mas precisam compilar.
-    if (builtin.os.tag == .linux) {
-        std.testing.refAllDecls(@import("platform/x11.zig").Window);
-        std.testing.refAllDecls(@import("audio.zig").Audio);
-    }
+    std.testing.refAllDecls(@import("platform.zig").Window);
+    std.testing.refAllDecls(@import("audio.zig").Audio);
 }

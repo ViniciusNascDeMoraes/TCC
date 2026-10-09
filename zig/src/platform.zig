@@ -14,7 +14,8 @@ const builtin = @import("builtin");
 
 pub const Window = switch (builtin.os.tag) {
     .linux => @import("platform/x11.zig").Window,
-    else => @compileError("sistema nao suportado: so Linux (X11)"),
+    .windows => @import("platform/win32.zig").Window,
+    else => @compileError("sistema nao suportado: so Linux (X11) e Windows"),
 };
 
 /// Teclas que o jogo usa. O Enter do teclado numerico tambem e `.enter`,
