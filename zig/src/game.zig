@@ -185,10 +185,14 @@ pub const Game = struct {
             self.menu.tick(self);
         } else if (self.menu.state_jogo and !self.pause and self.normal() and !self.dialogo and !self.fim) {
             self.player.tick(self);
-            // Como no Java, o inimigo seguinte a um removido so tica no proximo quadro.
+            // Um inimigo eliminado sai da lista sem fazer o seguinte perder o tick.
             var i: usize = 0;
-            while (i < self.enemies.items.len) : (i += 1) {
-                if (self.enemies.items[i].tick(self)) _ = self.enemies.orderedRemove(i);
+            while (i < self.enemies.items.len) {
+                if (self.enemies.items[i].tick(self)) {
+                    _ = self.enemies.orderedRemove(i);
+                } else {
+                    i += 1;
+                }
             }
 
             if (self.player.getY() < 80 and self.level == 1) {

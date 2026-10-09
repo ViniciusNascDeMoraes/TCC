@@ -210,8 +210,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
         } else if (menu.stateJogo == true && pause == false && gameOver == false && dialogo == false
                 && fim == false) {
-            for (int i = 0; i < entities.size(); i++) {
-                Entity e = entities.get(i);
+            // Percorre uma copia: um inimigo que sai da lista nao faz o seguinte perder o tick.
+            for (Entity e : new ArrayList<Entity>(entities)) {
                 e.tick();
             }
 
