@@ -111,7 +111,7 @@ pub fn pollIn(fd: i32, timeout_ms: i32) Error!bool {
 
 /// Dorme `ms` milissegundos.
 pub fn sleepMs(ms: u32) void {
-    var ts: linux.timespec = .{ .sec = ms / 1000, .nsec = @as(isize, ms % 1000) * std.time.ns_per_ms };
+    var ts: linux.timespec = .{ .sec = @intCast(ms / 1000), .nsec = @intCast(ms % 1000 * std.time.ns_per_ms) };
     while (interrupted(linux.nanosleep(&ts, &ts))) {}
 }
 
