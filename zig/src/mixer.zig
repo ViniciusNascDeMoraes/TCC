@@ -55,7 +55,7 @@ pub const Mixer = struct {
         const frames = out.len / wav.channels;
         var done: usize = 0;
         while (done < frames) {
-            const n = @min(frames - done, block);
+            const n: usize = @min(frames - done, block);
             var sum: [block * wav.channels]i32 = @splat(0);
             for (self.sounds, 0..) |pcm, id| {
                 for (&self.voices[id]) |*voice| {
@@ -114,6 +114,23 @@ test "soma sons diferentes e satura" {
     var out: [4]i16 = undefined;
     mixer.render(&out);
     try testing.expectEqualSlices(i16, &.{ 32767, -32768, 15, 25 }, &out);
+}
+
+test "buffers maiores que um bloco" {
+    const samples = comptime blk: {
+        @setEvalBranchQuota(10000);
+        var s: [3000 * 2]i16 = undefined;
+        for (&s, 0..) |*v, i| v.* = @intCast(i % 1000);
+        break :blk s;
+    };
+    var mixer: Mixer = .init(&.{pcmOf(&samples)});
+    mixer.play(0);
+    var out: [4096]i16 = undefined;
+    mixer.render(&out);
+    try testing.expectEqualSlices(i16, samples[0..4096], &out);
+    mixer.render(&out);
+    try testing.expectEqualSlices(i16, samples[4096..], out[0 .. samples.len - 4096]);
+    try testing.expectEqual(@as(i16, 0), out[samples.len - 4096]);
 }
 
 test "o mesmo som sobrepoe ate quatro vozes" {
