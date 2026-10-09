@@ -5,12 +5,15 @@
 //! `game_over` corresponde ao `Game.gameOver` do Java.
 
 const std = @import("std");
-const rl = @import("raylib");
 const assets = @import("assets");
 const gfx = @import("gfx.zig");
+const platform = @import("platform.zig");
 const Camera = @import("camera.zig").Camera;
 const Enemy = @import("entities.zig").Enemy;
+const Key = platform.Key;
+const KeyEvent = platform.KeyEvent;
 const Menu = @import("menu.zig").Menu;
+const Mixer = @import("mixer.zig").Mixer;
 const Player = @import("entities.zig").Player;
 const Sounds = @import("sound.zig").Sounds;
 const Spritesheet = @import("spritesheet.zig").Spritesheet;
@@ -35,53 +38,53 @@ const txt_missao_texto10 = "volte para casa!";
 
 /// Imagens de tela inteira (960x640).
 pub const Screens = struct {
-    menu: rl.Texture2D,
-    creditos: rl.Texture2D,
-    morreu: rl.Texture2D,
-    imagem_fim: rl.Texture2D,
-    tela_vacina: rl.Texture2D,
-    vacinando: [4]rl.Texture2D,
+    menu: gfx.Image,
+    creditos: gfx.Image,
+    morreu: gfx.Image,
+    imagem_fim: gfx.Image,
+    tela_vacina: gfx.Image,
+    vacinando: [4]gfx.Image,
 
-    fn load() Screens {
+    const files = [_][]const u8{
+        assets.tela_menu,
+        assets.tela_creditos,
+        assets.game_over,
+        assets.tela_fim,
+        assets.tela_vacina,
+        assets.vacinando,
+        assets.vacinando1,
+        assets.vacinando2,
+        assets.vacinando3,
+    };
+
+    fn load(gpa: std.mem.Allocator) !Screens {
+        var images: [files.len]gfx.Image = undefined;
+        for (files, 0..) |png, i| {
+            errdefer for (images[0..i]) |image| image.deinit(gpa);
+            images[i] = try gfx.loadImage(gpa, png);
+        }
         return .{
-            .menu = gfx.loadTexture(assets.tela_menu),
-            .creditos = gfx.loadTexture(assets.tela_creditos),
-            .morreu = gfx.loadTexture(assets.game_over),
-            .imagem_fim = gfx.loadTexture(assets.tela_fim),
-            .tela_vacina = gfx.loadTexture(assets.tela_vacina),
-            .vacinando = .{
-                gfx.loadTexture(assets.vacinando),
-                gfx.loadTexture(assets.vacinando1),
-                gfx.loadTexture(assets.vacinando2),
-                gfx.loadTexture(assets.vacinando3),
-            },
+            .menu = images[0],
+            .creditos = images[1],
+            .morreu = images[2],
+            .imagem_fim = images[3],
+            .tela_vacina = images[4],
+            .vacinando = images[5..9].*,
         };
     }
 
-    fn unload(self: Screens) void {
-        for ([_]rl.Texture2D{ self.menu, self.creditos, self.morreu, self.imagem_fim, self.tela_vacina } ++ self.vacinando) |texture| {
-            rl.UnloadTexture(texture);
+    fn unload(self: Screens, gpa: std.mem.Allocator) void {
+        for ([_]gfx.Image{ self.menu, self.creditos, self.morreu, self.imagem_fim, self.tela_vacina } ++ self.vacinando) |image| {
+            image.deinit(gpa);
         }
     }
 };
 
-/// Teclas que o jogo trata. O Enter do teclado numerico conta como Enter,
-/// como o `KeyEvent.VK_ENTER` do Java.
-const keys = [_]c_int{ rl.KEY_W, rl.KEY_A, rl.KEY_S, rl.KEY_D, rl.KEY_ENTER, rl.KEY_KP_ENTER, rl.KEY_ESCAPE };
-
-fn keyIndex(key: c_int) ?usize {
-    return std.mem.indexOfScalar(c_int, &keys, key);
-}
-
-fn normalizeKey(key: c_int) c_int {
-    return if (key == rl.KEY_KP_ENTER) rl.KEY_ENTER else key;
-}
-
 /// Esc e Enter so contam quando apertados de novo: segurar a tecla nao
 /// repete a acao (no Java, as flags `escPressionado`/`enterPressionado`).
-fn repeatsWhenHeld(key: c_int) bool {
+fn repeatsWhenHeld(key: Key) bool {
     return switch (key) {
-        rl.KEY_ESCAPE, rl.KEY_ENTER, rl.KEY_KP_ENTER => false,
+        .escape, .enter => false,
         else => true,
     };
 }
@@ -99,7 +102,9 @@ pub const Game = struct {
     spritesheet: Spritesheet,
     screens: Screens,
     /// O `BufferedImage image` 240x160 onde o mundo e desenhado.
-    image: rl.RenderTexture2D,
+    image: gfx.Canvas,
+    /// O quadro inteiro (960x640) que vai para a janela.
+    frame: gfx.Canvas,
     text: Text,
     sounds: Sounds,
 
@@ -133,29 +138,42 @@ pub const Game = struct {
 
     const option_max = 1;
 
-    /// Requer a janela e o dispositivo de audio ja inicializados.
-    pub fn init(self: *Game, gpa: std.mem.Allocator) !void {
+    /// `mixer` e `null` quando nao ha audio. `io` le as fontes do sistema.
+    pub fn init(self: *Game, gpa: std.mem.Allocator, io: std.Io, mixer: ?*Mixer) !void {
+        const spritesheet: Spritesheet = try .load(gpa);
+        errdefer spritesheet.unload(gpa);
+        const screens: Screens = try .load(gpa);
+        errdefer screens.unload(gpa);
+        const image: gfx.Canvas = try .init(gpa, width, height);
+        errdefer image.deinit(gpa);
+        const frame: gfx.Canvas = try .init(gpa, widthfm, heightfm);
+        errdefer frame.deinit(gpa);
+        const text: Text = try .load(gpa, io);
+        errdefer text.unload(gpa);
+
         self.* = .{
             .gpa = gpa,
-            .spritesheet = .load(),
-            .screens = .load(),
-            .image = rl.LoadRenderTexture(width, height),
-            .text = .load(),
-            .sounds = .load(),
+            .spritesheet = spritesheet,
+            .screens = screens,
+            .image = image,
+            .frame = frame,
+            .text = text,
+            .sounds = .{ .mixer = mixer },
             .player = .init(1),
             .world = undefined,
         };
+        errdefer self.enemies.deinit(gpa);
         self.world = try World.load(self, assets.level1);
     }
 
     pub fn deinit(self: *Game) void {
         self.world.deinit(self);
         self.enemies.deinit(self.gpa);
-        self.sounds.unload();
-        self.text.unload();
-        rl.UnloadRenderTexture(self.image);
-        self.screens.unload();
-        self.spritesheet.unload();
+        self.text.unload(self.gpa);
+        self.frame.deinit(self.gpa);
+        self.image.deinit(self.gpa);
+        self.screens.unload(self.gpa);
+        self.spritesheet.unload(self.gpa);
     }
 
     fn normal(self: Game) bool {
@@ -273,25 +291,18 @@ pub const Game = struct {
         }
     }
 
+    /// Desenha o quadro em `frame`.
     pub fn render(self: *Game) void {
         // Mundo e entidades na imagem 240x160.
-        rl.BeginTextureMode(self.image);
-        rl.ClearBackground(gfx.black);
+        self.image.clear(gfx.black);
         if (self.menu.state_jogo and self.normal()) {
             self.world.render(self);
             self.player.render(self);
             for (self.enemies.items) |enemy| enemy.render(self);
         }
-        rl.EndTextureMode();
 
-        rl.BeginDrawing();
-        defer rl.EndDrawing();
-        rl.ClearBackground(gfx.black);
-
-        // A textura de um RenderTexture fica de cabeca para baixo: altura negativa.
-        const source: rl.Rectangle = .{ .x = 0, .y = 0, .width = width, .height = -height };
-        const dest: rl.Rectangle = .{ .x = 0, .y = 0, .width = widthfm, .height = heightfm };
-        rl.DrawTexturePro(self.image.texture, source, dest, .{ .x = 0, .y = 0 }, 0, gfx.white);
+        // A imagem ampliada cobre o quadro inteiro.
+        self.frame.drawScaled(self.image, scale);
 
         self.renderScreens();
         self.renderMission();
@@ -304,34 +315,34 @@ pub const Game = struct {
         {
             self.menu.render(self);
         } else if (self.fim) {
-            gfx.fillScreen(gfx.blue);
-            gfx.drawScreen(self.screens.imagem_fim);
+            gfx.fillScreen(self.frame, gfx.blue);
+            gfx.drawScreen(self.frame, self.screens.imagem_fim);
         } else if (self.pause and self.normal()) {
             self.renderOptions(txtmenu1, txtmenu2, gfx.white);
         } else if (self.game_over) {
-            gfx.drawScreen(self.screens.morreu);
+            gfx.drawScreen(self.frame, self.screens.morreu);
             self.renderOptions(txtgo1, txtgo2, gfx.black);
         } else if (self.player.getY() < 20 and self.player.getX() > 93 and self.player.getX() < 98 and self.level == 2) {
             self.dialogo = true;
-            gfx.fillScreen(gfx.blue);
+            gfx.fillScreen(self.frame, gfx.blue);
 
             self.time += 1;
             if (self.volta < 3) {
                 // Cada imagem fica 39 quadros; os quadros 40, 80, 120 e 160 ficam so azuis.
                 if (self.time < 40) {
-                    gfx.drawScreen(self.screens.vacinando[0]);
+                    gfx.drawScreen(self.frame, self.screens.vacinando[0]);
                 } else if (self.time > 40 and self.time < 80) {
-                    gfx.drawScreen(self.screens.vacinando[1]);
+                    gfx.drawScreen(self.frame, self.screens.vacinando[1]);
                 } else if (self.time > 80 and self.time < 120) {
-                    gfx.drawScreen(self.screens.vacinando[2]);
+                    gfx.drawScreen(self.frame, self.screens.vacinando[2]);
                 } else if (self.time > 120 and self.time < 160) {
-                    gfx.drawScreen(self.screens.vacinando[3]);
+                    gfx.drawScreen(self.frame, self.screens.vacinando[3]);
                 } else if (self.time > 160) {
                     self.time = 0;
                     self.volta += 1;
                 }
             } else if (self.volta >= 3 and self.volta < 5) {
-                gfx.drawScreen(self.screens.tela_vacina);
+                gfx.drawScreen(self.frame, self.screens.tela_vacina);
 
                 if (self.time > 100) {
                     self.volta += 1;
@@ -345,96 +356,86 @@ pub const Game = struct {
     }
 
     /// As duas opcoes centralizadas dos menus de pausa e de game over.
-    fn renderOptions(self: *Game, op1: [:0]const u8, op2: [:0]const u8, color: rl.Color) void {
+    fn renderOptions(self: *Game, op1: []const u8, op2: []const u8, color: gfx.Color) void {
         const cx = widthfm / 2;
         const cy = heightfm / 2;
 
         const tam1 = self.text.width(op1, .s30);
-        self.text.draw(op1, .s30, cx - @divTrunc(tam1, 2), cy - 50, color);
+        self.text.draw(self.frame, op1, .s30, cx - @divTrunc(tam1, 2), cy - 50, color);
         const tam2 = self.text.width(op2, .s30);
-        self.text.draw(op2, .s30, cx - @divTrunc(tam2, 2), cy, color);
+        self.text.draw(self.frame, op2, .s30, cx - @divTrunc(tam2, 2), cy, color);
 
         if (self.option_atual == 0) {
-            self.text.draw(">", .s30, cx - @divTrunc(tam1, 2) - 40, cy - 50, color);
+            self.text.draw(self.frame, ">", .s30, cx - @divTrunc(tam1, 2) - 40, cy - 50, color);
         } else if (self.option_atual == 1) {
-            self.text.draw(">", .s30, cx - @divTrunc(tam2, 2) - 40, cy, color);
+            self.text.draw(self.frame, ">", .s30, cx - @divTrunc(tam2, 2) - 40, cy, color);
         }
     }
 
     /// Textos de missao no canto superior esquerdo (desenhados por cima de tudo).
     fn renderMission(self: *Game) void {
         if (self.level == 1 and self.normal() and self.menu.state_jogo and self.player.getY() > 160) {
-            self.text.draw(txt_missao_texto, .s23, 15, 30, gfx.white);
-            self.text.draw(txt_missao_texto1, .s23, 15, 60, gfx.white);
-            self.text.draw(txt_missao_texto3, .s23, 15, 100, gfx.white);
+            self.text.draw(self.frame, txt_missao_texto, .s23, 15, 30, gfx.white);
+            self.text.draw(self.frame, txt_missao_texto1, .s23, 15, 60, gfx.white);
+            self.text.draw(self.frame, txt_missao_texto3, .s23, 15, 100, gfx.white);
         } else if (self.level == 2 and self.normal() and self.menu.state_jogo and !self.vacinado and !self.dialogo) {
-            self.text.draw(txt_missao_texto4, .s20, 15, 30, gfx.black);
-            self.text.draw(txt_missao_texto5, .s20, 15, 60, gfx.black);
+            self.text.draw(self.frame, txt_missao_texto4, .s20, 15, 30, gfx.black);
+            self.text.draw(self.frame, txt_missao_texto5, .s20, 15, 60, gfx.black);
         } else if (self.level == 3 and self.normal() and self.menu.state_jogo and self.player.getY() > 160) {
             if (self.contador < self.total_inimigos) {
-                self.text.draw(txt_missao_texto6, .s23, 15, 30, gfx.white);
-                self.text.draw(txt_missao_texto7, .s23, 15, 60, gfx.white);
-                self.text.draw(txt_missao_texto8, .s23, 15, 100, gfx.white);
+                self.text.draw(self.frame, txt_missao_texto6, .s23, 15, 30, gfx.white);
+                self.text.draw(self.frame, txt_missao_texto7, .s23, 15, 60, gfx.white);
+                self.text.draw(self.frame, txt_missao_texto8, .s23, 15, 100, gfx.white);
                 var buffer: [16]u8 = undefined;
-                const contador = std.fmt.bufPrintZ(&buffer, "{d}", .{self.contador}) catch unreachable;
-                self.text.draw(contador, .s23, 275, 101, gfx.white);
+                const contador = std.fmt.bufPrint(&buffer, "{d}", .{self.contador}) catch unreachable;
+                self.text.draw(self.frame, contador, .s23, 275, 101, gfx.white);
             }
             if (self.contador >= self.total_inimigos and !self.fim) {
-                self.text.draw(txt_missao_texto9, .s20, 15, 30, gfx.white);
-                self.text.draw(txt_missao_texto10, .s20, 15, 60, gfx.white);
+                self.text.draw(self.frame, txt_missao_texto9, .s20, 15, 30, gfx.white);
+                self.text.draw(self.frame, txt_missao_texto10, .s20, 15, 60, gfx.white);
             }
         }
     }
 
-    /// Le o teclado do quadro e repassa para `keyPressed`/`keyReleased`,
-    /// como os eventos do `KeyListener` do Java (incluindo a repeticao
-    /// automatica de W/A/S/D segurado). A fila do `GetKeyPressed` so tem
-    /// apertos novos, entao um Esc solto e apertado no mesmo quadro conta.
-    pub fn handleInput(self: *Game) void {
-        var pressed_now: [keys.len]bool = @splat(false);
-        while (true) {
-            const key = rl.GetKeyPressed();
-            if (key == 0) break;
-            const i = keyIndex(key) orelse continue;
-            pressed_now[i] = true;
-            self.keyPressed(normalizeKey(key));
-        }
-
-        for (keys, pressed_now) |key, pressed| {
-            if (rl.IsKeyPressedRepeat(key) and repeatsWhenHeld(key)) self.keyPressed(normalizeKey(key));
-            // Tecla apertada e solta no mesmo quadro tambem gera a soltura.
-            if (rl.IsKeyReleased(key) or (pressed and !rl.IsKeyDown(key))) self.keyReleased(normalizeKey(key));
-        }
+    /// Repassa os eventos de teclado do quadro, na ordem em que aconteceram,
+    /// para `keyPressed`/`keyReleased`, como o `KeyListener` do Java
+    /// (incluindo a repeticao automatica de W/A/S/D segurado).
+    pub fn handleInput(self: *Game, events: []const KeyEvent) void {
+        for (events) |event| switch (event.action) {
+            .press => self.keyPressed(event.key),
+            .repeat => if (repeatsWhenHeld(event.key)) self.keyPressed(event.key),
+            .release => self.keyReleased(event.key),
+        };
     }
 
-    pub fn keyPressed(self: *Game, key: c_int) void {
+    pub fn keyPressed(self: *Game, key: Key) void {
         if (self.menu.state_inicio and self.normal()) {
-            if (key == rl.KEY_W) {
+            if (key == .w) {
                 self.menu.w = true;
-            } else if (key == rl.KEY_S) {
+            } else if (key == .s) {
                 self.menu.s = true;
             }
-            if (key == rl.KEY_ENTER) {
+            if (key == .enter) {
                 self.menu.enter = true;
             }
         } else if (self.menu.state_creditos and self.normal()) {
-            if (key == rl.KEY_ENTER or key == rl.KEY_ESCAPE) {
+            if (key == .enter or key == .escape) {
                 self.menu.enter = true;
             }
         } else if (self.menu.state_jogo and self.normal() and !self.fim) {
-            if (key == rl.KEY_W) {
+            if (key == .w) {
                 self.player.up = true;
-            } else if (key == rl.KEY_S) {
+            } else if (key == .s) {
                 self.player.down = true;
             }
 
-            if (key == rl.KEY_D) {
+            if (key == .d) {
                 self.player.right = true;
-            } else if (key == rl.KEY_A) {
+            } else if (key == .a) {
                 self.player.left = true;
             }
 
-            if (key == rl.KEY_ESCAPE) {
+            if (key == .escape) {
                 if (self.pause) {
                     // Descarta W/S/Enter apertados no menu de pausa e ainda nao processados.
                     self.pause = false;
@@ -447,41 +448,41 @@ pub const Game = struct {
                 }
             }
 
-            if (key == rl.KEY_W and self.pause) {
+            if (key == .w and self.pause) {
                 self.w = true;
-            } else if (key == rl.KEY_S and self.pause) {
+            } else if (key == .s and self.pause) {
                 self.s = true;
             }
-            if (key == rl.KEY_ENTER and self.pause) {
+            if (key == .enter and self.pause) {
                 self.enter = true;
             }
         } else if (self.menu.state_jogo and self.fim) {
-            if (key == rl.KEY_ENTER or key == rl.KEY_ESCAPE) {
+            if (key == .enter or key == .escape) {
                 self.enter = true;
             }
         } else if (self.game_over) {
-            if (key == rl.KEY_W) {
+            if (key == .w) {
                 self.w = true;
-            } else if (key == rl.KEY_S) {
+            } else if (key == .s) {
                 self.s = true;
             }
-            if (key == rl.KEY_ENTER) {
+            if (key == .enter) {
                 self.enter = true;
             }
         }
     }
 
-    pub fn keyReleased(self: *Game, key: c_int) void {
+    pub fn keyReleased(self: *Game, key: Key) void {
         if (self.menu.state_jogo) {
-            if (key == rl.KEY_W) {
+            if (key == .w) {
                 self.player.up = false;
-            } else if (key == rl.KEY_S) {
+            } else if (key == .s) {
                 self.player.down = false;
             }
 
-            if (key == rl.KEY_D) {
+            if (key == .d) {
                 self.player.right = false;
-            } else if (key == rl.KEY_A) {
+            } else if (key == .a) {
                 self.player.left = false;
             }
         }

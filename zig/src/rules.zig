@@ -1,6 +1,6 @@
 //! Regras puras do mapa: tiles, leitura das cores dos niveis e colisao.
 //! Equivale a `World.World` + `Graphics.Tile` (e subclasses) do Java, sem
-//! nenhuma chamada ao raylib, para poder ser testado sem janela.
+//! nenhuma chamada ao sistema, para poder ser testado sem janela.
 
 const std = @import("std");
 

@@ -1,7 +1,7 @@
 //! `World.World`: o mapa do nivel atual, montado a partir do PNG do nivel.
 
-const rl = @import("raylib");
 const assets = @import("assets");
+const gfx = @import("gfx.zig");
 const rules = @import("rules.zig");
 const Game = @import("game.zig").Game;
 const Enemy = @import("entities.zig").Enemy;
@@ -14,13 +14,12 @@ pub const World = struct {
     /// `new World("/levelN.png")`: cada pixel vira um tile, a posicao inicial
     /// do jogador ou um inimigo, conforme `rules.classifyPixel`.
     pub fn load(g: *Game, png: []const u8) !World {
-        const image = rl.LoadImageFromMemory(".png", png.ptr, @intCast(png.len));
-        defer rl.UnloadImage(image);
-        const colors = rl.LoadImageColors(image);
-        defer rl.UnloadImageColors(colors);
+        const image = try gfx.loadImage(g.gpa, png);
+        defer image.deinit(g.gpa);
+        const colors = image.pixels;
 
-        const width: usize = @intCast(image.width);
-        const height: usize = @intCast(image.height);
+        const width: usize = image.width;
+        const height: usize = image.height;
         const tiles = try g.gpa.alloc(rules.Tile, width * height);
         errdefer g.gpa.free(tiles);
 
@@ -73,7 +72,7 @@ pub const World = struct {
             while (yy <= yfinal) : (yy += 1) {
                 if (xx < 0 or yy < 0 or xx >= self.width or yy >= self.height) continue;
                 const tile = self.tiles[@intCast(xx + yy * self.width)];
-                g.spritesheet.draw(tile.sprite, xx * rules.tile_size - g.camera.x, yy * rules.tile_size - g.camera.y);
+                g.spritesheet.draw(g.image, tile.sprite, xx * rules.tile_size - g.camera.x, yy * rules.tile_size - g.camera.y);
             }
         }
     }
