@@ -32,7 +32,8 @@ repositório no IntelliJ IDEA.
 
 ## Versão Zig
 
-Requer o [Zig 0.16](https://ziglang.org/download/). Na pasta `zig/`:
+Requer o [Zig 0.16](https://ziglang.org/download/) e roda no Linux (X11 ou
+XWayland) e no Windows. Na pasta `zig/`:
 
 ```sh
 cd zig
@@ -54,5 +55,14 @@ o jogo roda sem som. No Windows ele usa só as DLLs do próprio sistema.
 
 O texto usa a fonte "Bookman Old Style" se ela estiver instalada (vem com o
 Microsoft Office). Sem ela, usa o clone livre URW Bookman no Linux (pacote
-`fonts-urw-base35`) e, se também não houver, Arial/DejaVu Sans em negrito, como o Java faria.
-Sem nenhuma dessas, usa uma fonte bitmap 8x8 embutida (font8x8, domínio público).
+`fonts-urw-base35`) e, se também não houver, Arial/DejaVu Sans/Liberation Sans em negrito,
+como o Java faria. Sem nenhuma dessas, usa uma fonte bitmap 8x8 embutida (font8x8, domínio público).
+
+Limitações conhecidas da versão Zig:
+
+- macOS não é suportado (era enquanto o jogo usava o raylib); lá só os testes compilam.
+- No Linux o som sai pelo PulseAudio ou PipeWire. Sistemas só com ALSA ficam sem som, e
+  `PULSE_SERVER` só aceita sockets Unix (não endereços TCP). Se o servidor de áudio
+  reiniciar, o som volta sozinho em até 2 s.
+- No X11 a tela precisa ter 24 bits de cor e cada quadro é enviado pelo socket
+  (PutImage), sem memória compartilhada (MIT-SHM).
