@@ -23,8 +23,8 @@ const target_latency = wav.sample_rate * wav.bytes_per_frame * 40 / 1000;
 /// O que a thread de audio precisa, preparado na thread principal (que tem
 /// acesso as variaveis de ambiente e aos arquivos).
 pub const Config = struct {
-    paths: [4][108]u8 = undefined,
-    path_lens: [4]usize = undefined,
+    paths: [6][108]u8 = undefined,
+    path_lens: [6]usize = undefined,
     count: usize = 0,
     cookie: [proto.cookie_len]u8 = @splat(0),
 
@@ -44,7 +44,8 @@ pub fn prepare(gpa: std.mem.Allocator, io: std.Io, env: *const std.process.Envir
     var config: Config = .{};
 
     // $PULSE_SERVER: lista separada por espacos, como "unix:/caminho" ou
-    // "{id-da-maquina}unix:/caminho"; enderecos TCP sao ignorados.
+    // "{id-da-maquina}unix:/caminho". Enderecos de rede (tcp:host:porta) nao
+    // sao suportados: avisa e segue para os sockets locais.
     if (env.get("PULSE_SERVER")) |servers| {
         var it = std.mem.tokenizeAny(u8, servers, " \t");
         while (it.next()) |entry| {
@@ -54,12 +55,18 @@ pub fn prepare(gpa: std.mem.Allocator, io: std.Io, env: *const std.process.Envir
                 server = server[close + 1 ..];
             }
             if (std.mem.startsWith(u8, server, "unix:")) server = server[5..];
-            if (server.len > 0 and server[0] == '/') config.add("{s}", .{server});
+            if (server.len > 0 and server[0] == '/') {
+                config.add("{s}", .{server});
+            } else {
+                log.warn("PULSE_SERVER \"{s}\": so sockets Unix sao suportados; usando os sockets locais", .{entry});
+            }
         }
     }
     if (env.get("PULSE_RUNTIME_PATH")) |dir| config.add("{s}/native", .{dir});
     if (env.get("XDG_RUNTIME_DIR")) |dir| config.add("{s}/pulse/native", .{dir});
     config.add("/run/user/{d}/pulse/native", .{linux.getuid()});
+    // PulseAudio em modo sistema (`pulseaudio --system`).
+    config.add("/var/run/pulse/native", .{});
 
     // Cookie de autenticacao; o PipeWire o ignora e o PulseAudio tambem
     // aceita as credenciais do processo (mesmo usuario).
