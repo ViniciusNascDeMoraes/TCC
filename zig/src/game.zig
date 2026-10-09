@@ -2,8 +2,7 @@
 //!
 //! As condicoes seguem o Java ao pe da letra (inclusive a precedencia de
 //! `a || b && c` e a ordem dos `else if`), para o jogo se comportar igual.
-//! Os tres `Enemy*.state` do Java so sao lidos como "algum GAMEOVER" ou
-//! "todos GAMENORMAL", entao viraram um unico `game_over`.
+//! `game_over` corresponde ao `Game.gameOver` do Java.
 
 const std = @import("std");
 const rl = @import("raylib");
@@ -115,7 +114,7 @@ pub const Game = struct {
     game_over: bool = false,
     /// `Enemy.escudo`, `Enemy02.escudo` e `Enemy03.escudo`.
     escudo: [3]bool = @splat(true),
-    /// Opcao do menu de pausa / game over: 0 = "op1", 1 = "op2".
+    /// Opcao do menu de pausa / game over: 0 = primeira opcao, 1 = segunda.
     option_atual: i32 = 0,
     w: bool = false,
     s: bool = false,

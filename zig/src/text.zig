@@ -2,9 +2,9 @@
 //! + `g.drawString` do Java.
 //!
 //! A Bookman Old Style nao pode ser distribuida junto com o jogo, entao ela e
-//! lida da pasta de fontes do sistema. Sem ela, usa as mesmas fontes que o
-//! Java usaria no lugar (fonte logica "Dialog") e, por ultimo, a fonte padrao
-//! do raylib.
+//! lida da pasta de fontes do sistema. Sem ela, tenta o clone livre URW
+//! Bookman (Linux), depois as fontes que o Java usaria no lugar (fonte logica
+//! "Dialog": Arial/DejaVu Sans) e, por ultimo, a fonte padrao do raylib.
 
 const rl = @import("raylib");
 const ttf = @import("ttf.zig");

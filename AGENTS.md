@@ -13,7 +13,7 @@
 ## Java: Build And Run
 
 - Work from `java/`: `cd java`.
-- Compile when a JDK is on `PATH`: `javac -cp "src;res" -d bin src\Main\Game.java` (use `:` instead of `;` on Linux/macOS).
+- Compile when a JDK is on `PATH`: `javac -cp "src;res" -d bin src\Main\Game.java` (on Linux/macOS use `:` instead of `;` and `/` instead of `\`: `javac -cp "src:res" -d bin src/Main/Game.java`).
 - Run: `java -cp "bin;res" Main.Game`.
 - Java sources are UTF-8 (`javac`'s default since JDK 18). Keep them UTF-8: the Portuguese accents were lost once when Latin-1 files were reformatted as UTF-8.
 - The `java/` working directory matters because images/levels use classpath resources like `/Spritesheet.png`, while audio uses filesystem paths like `res/Menu.wav`.
@@ -29,7 +29,7 @@
 - `zig/.zig-cache/`, `zig/zig-out/`, and `zig/zig-pkg/` (Zig 0.16 package cache) are ignored by `.gitignore`.
 - Module map: `game.zig` (Game), `menu.zig` (Menu), `world.zig` (World/restartGame), `entities.zig` (Player, Enemy/Enemy02/Enemy03 as one `Enemy` with a `kind`), `rules.zig` (Tile classes, map colors, `place_free`, `Rectangle.intersects`), `camera.zig`, `sound.zig`, `spritesheet.zig`, `text.zig` + `ttf.zig` (fonts), `gfx.zig` (colors/images).
 - Keep raylib calls out of `rules.zig`, `camera.zig`, and `ttf.zig` so `zig build test` runs without a window.
-- Text uses "Bookman Old Style" Bold from the system font folder when present (not redistributable), then Arial/DejaVu Sans Bold, then raylib's default font.
+- Text uses "Bookman Old Style" Bold from the system font folder when present (not redistributable), then the free URW Bookman Demi clone (Linux, `fonts-urw-base35`), then Arial/DejaVu Sans Bold (Java's "Dialog" fallback), then raylib's default font.
 
 ## Gameplay Data
 

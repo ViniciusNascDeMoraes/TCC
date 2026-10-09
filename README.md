@@ -51,4 +51,5 @@ No Linux são necessários os pacotes de desenvolvimento do X11/OpenGL
 (`libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev`).
 
 O texto usa a fonte "Bookman Old Style" se ela estiver instalada (vem com o
-Microsoft Office); sem ela, usa Arial/DejaVu Sans em negrito, como o Java faria.
+Microsoft Office). Sem ela, usa o clone livre URW Bookman no Linux (pacote
+`fonts-urw-base35`) e, se também não houver, Arial/DejaVu Sans em negrito, como o Java faria.
