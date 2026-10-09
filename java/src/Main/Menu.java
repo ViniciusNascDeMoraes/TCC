@@ -8,7 +8,7 @@ public class Menu {
     public int optionMax = options.length - 1;
     public int tam1, tam2, tam3, tam4;
 
-    public String txtmenu1 = "Novo jogo", txtmenu2 = "Cr�ditos",
+    public String txtmenu1 = "Novo jogo", txtmenu2 = "Créditos",
             txtmenu3 = "Sair";
     public String txttitulocred = "Desenvolvido por:",
             txtcred1 = "Voltar";

@@ -15,6 +15,7 @@
 - Work from `java/`: `cd java`.
 - Compile when a JDK is on `PATH`: `javac -cp "src;res" -d bin src\Main\Game.java` (use `:` instead of `;` on Linux/macOS).
 - Run: `java -cp "bin;res" Main.Game`.
+- Java sources are UTF-8 (`javac`'s default since JDK 18). Keep them UTF-8: the Portuguese accents were lost once when Latin-1 files were reformatted as UTF-8.
 - The `java/` working directory matters because images/levels use classpath resources like `/Spritesheet.png`, while audio uses filesystem paths like `res/Menu.wav`.
 - `java/bin/` and `java/doc/` are generated artifacts ignored by `.gitignore`; avoid hand-editing them and regenerate outputs intentionally when needed.
 
