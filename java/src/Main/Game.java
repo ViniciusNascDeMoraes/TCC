@@ -266,34 +266,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
             }
         } else if (pause == true && gameOver == false) {
-            if (w == true) {
-
-                Sound.play("res/Menu.wav");
-
-                w = false;
-                optionAtual--;
-
-                if (optionAtual < 0) {
-
-                    optionAtual = optionMax;
-
-                }
-
-            }
-
-            if (s == true) {
-
-                Sound.play("res/Menu.wav");
-
-                s = false;
-                optionAtual++;
-
-                if (optionAtual > optionMax) {
-
-                    optionAtual = 0;
-
-                }
-            }
+            navegarOpcoes();
 
             if (enter == true) {
 
@@ -313,34 +286,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 }
             }
         } else if (gameOver == true) {
-            if (w == true) {
-
-                Sound.play("res/Menu.wav");
-
-                w = false;
-                optionAtual--;
-
-                if (optionAtual < 0) {
-
-                    optionAtual = optionMax;
-
-                }
-
-            }
-
-            if (s == true) {
-
-                Sound.play("res/Menu.wav");
-
-                s = false;
-                optionAtual++;
-
-                if (optionAtual > optionMax) {
-
-                    optionAtual = 0;
-
-                }
-            }
+            navegarOpcoes();
 
             if (enter == true) {
 
@@ -361,6 +307,40 @@ public class Game extends Canvas implements Runnable, KeyListener {
             }
         }
 
+    }
+
+    /**
+     * W/S nos menus de pausa e de game over.
+     */
+    private void navegarOpcoes() {
+        if (w == true) {
+
+            Sound.play("res/Menu.wav");
+
+            w = false;
+            optionAtual--;
+
+            if (optionAtual < 0) {
+
+                optionAtual = optionMax;
+
+            }
+
+        }
+
+        if (s == true) {
+
+            Sound.play("res/Menu.wav");
+
+            s = false;
+            optionAtual++;
+
+            if (optionAtual > optionMax) {
+
+                optionAtual = 0;
+
+            }
+        }
     }
 
     public void render() {
