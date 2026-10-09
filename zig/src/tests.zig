@@ -18,8 +18,10 @@ test {
     _ = @import("glyphs.zig");
     _ = @import("platform.zig");
     _ = @import("platform/x11_proto.zig");
+    _ = @import("audio/pulse_proto.zig");
     // Os backends nao rodam nos testes, mas precisam compilar.
     if (builtin.os.tag == .linux) {
         std.testing.refAllDecls(@import("platform/x11.zig").Window);
+        std.testing.refAllDecls(@import("audio.zig").Audio);
     }
 }
