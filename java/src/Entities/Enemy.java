@@ -10,7 +10,6 @@ import java.awt.image.BufferedImage;
 
 public class Enemy extends Entity {
 
-    public static String state = "GAMENORMAL";
     public static boolean escudo = true;
     public int right_dir = 0, left_dir = 1;
     public int dir = right_dir;
@@ -69,7 +68,7 @@ public class Enemy extends Entity {
         } else if (this.isCollidingWithPlayer() == true && Game.LEVEL == 1) {
             Game.player.life--;
             if (Game.player.life == 0) {
-                state = "GAMEOVER";
+                Game.gameOver = true;
                 Sound.play("res/Menino.wav");
             }
 

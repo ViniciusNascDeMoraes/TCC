@@ -11,7 +11,6 @@ import java.awt.image.BufferedImage;
 public class Enemy03 extends Entity {
 
 
-    public static String state = "GAMENORMAL";
     public static boolean escudo = true;
     public int right_dir = 0, left_dir = 1;
     public int dir = right_dir;
