@@ -129,7 +129,8 @@ pub const Font = struct {
         return readU16(self.hmtx, @as(usize, i) * 4) catch 0;
     }
 
-    /// Desenha o contorno do glifo `gid` em `path` (em unidades da fonte).
+    /// Desenha o contorno do glifo `gid` em `path` (em unidades da fonte),
+    /// com todos os contornos fechados, pronto para `raster.rasterize`.
     pub fn outline(self: Font, gid: u16, path: *Path) Error!void {
         if (gid >= self.num_glyphs) return error.Malformed;
         switch (self.outlines) {
@@ -283,23 +284,18 @@ fn emitContour(pts: []const GlyfPoint, path: *Path) Error!void {
         if (p.on) break i;
     } else null;
 
-    var start: GlyfPoint = undefined;
-    var begin: usize = undefined;
-    var count: usize = undefined;
-    if (first_on) |f| {
-        start = pts[f];
-        begin = f + 1;
-        count = n;
-    } else {
-        // So pontos de controle: comeca no meio do ultimo com o primeiro.
-        start = .{ .x = (pts[n - 1].x + pts[0].x) / 2, .y = (pts[n - 1].y + pts[0].y) / 2, .on = true };
-        begin = 0;
-        count = n;
-    }
+    // Comeca no primeiro ponto na curva e da a volta ate ele; so com pontos
+    // de controle, comeca no meio do ultimo com o primeiro.
+    const start: GlyfPoint = if (first_on) |f| pts[f] else .{
+        .x = (pts[n - 1].x + pts[0].x) / 2,
+        .y = (pts[n - 1].y + pts[0].y) / 2,
+        .on = true,
+    };
+    const begin = if (first_on) |f| f + 1 else 0;
 
     try path.moveTo(start.x, start.y);
     var control: ?GlyfPoint = null;
-    for (0..count) |k| {
+    for (0..n) |k| {
         const p = pts[(begin + k) % n];
         if (p.on) {
             if (control) |c| try path.quadTo(c.x, c.y, p.x, p.y) else try path.lineTo(p.x, p.y);
@@ -310,7 +306,6 @@ fn emitContour(pts: []const GlyfPoint, path: *Path) Error!void {
         }
     }
     if (control) |c| try path.quadTo(c.x, c.y, start.x, start.y);
-    try path.close();
 }
 
 /// Escolhe a subtabela Unicode do `cmap`: formato 4 (BMP) ou 12.

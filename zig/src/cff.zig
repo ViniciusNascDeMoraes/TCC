@@ -176,11 +176,11 @@ pub const Cff = struct {
         return self.charstrings.count;
     }
 
-    /// Desenha o glifo `gid` em `path` (em unidades da fonte).
+    /// Desenha o glifo `gid` em `path` (em unidades da fonte). O ultimo
+    /// contorno fica aberto: quem chama (`ttf.Font.outline`) o fecha.
     pub fn outline(self: Cff, gid: u16, path: *Path) Error!void {
         var interp: Interpreter = .{ .cff = &self, .path = path };
         _ = try interp.run(try self.charstrings.get(gid), 0);
-        try path.close();
     }
 };
 
@@ -490,6 +490,7 @@ test "interpreta um glifo com largura, hints, subrotina e endchar" {
     var path: raster.Path = .init(testing.allocator, 1);
     defer path.deinit();
     try cff.outline(0, &path);
+    try path.close();
     var pool: std.ArrayList(u8) = .empty;
     defer pool.deinit(testing.allocator);
     const box = try raster.rasterize(testing.allocator, &path, &pool);
@@ -518,6 +519,7 @@ test "curvas: hvcurveto com argumento final e flex" {
     var path: raster.Path = .init(testing.allocator, 1);
     defer path.deinit();
     try cff.outline(0, &path);
+    try path.close();
     // Fim da hvcurveto: (10 + 10 + 5, 10 + 10); o hflex anda 1+2+4+5+6+7 em x.
     const last = path.lines.items[path.lines.items.len - 2].p1;
     try testing.expectApproxEqAbs(@as(f32, 25 + 25), last.x, 0.001);
