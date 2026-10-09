@@ -4,16 +4,13 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const raylib_dep = b.dependency("raylib", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
     // Imagens e sons ficam embutidos no executavel (ver res/assets.zig).
     const assets = b.createModule(.{
         .root_source_file = b.path("res/assets.zig"),
     });
 
+    // Sem dependencias: janela, audio, PNG e fontes sao feitos em Zig
+    // (no Linux o executavel e estatico; no Windows so usa DLLs do sistema).
     const exe = b.addExecutable(.{
         .name = "vacina",
         .root_module = b.createModule(.{
@@ -21,7 +18,6 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "raylib", .module = raylib_dep.module("raylib") },
                 .{ .name = "assets", .module = assets },
             },
         }),
