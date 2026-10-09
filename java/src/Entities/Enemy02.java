@@ -8,32 +8,30 @@ import World.World;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-public class Enemy03 extends Entity {
+public class Enemy02 extends Entity {
 
-
-    public static String state = "GAMENORMAL";
     public static boolean escudo = true;
     public int right_dir = 0, left_dir = 1;
     public int dir = right_dir;
-    private int maskx = 6, masky = 3, maskw = 8, maskh = 12;
+    private final int maskx = 6, masky = 3, maskw = 8, maskh = 12;
     private double speed = 1.5;
     private BufferedImage[] rightEnemy;
     private BufferedImage[] leftEnemy;
     private int frames = 0, maxFrames = 20, index = 0, Maxindex = 1;
     private boolean moved = false;
 
-    public Enemy03(int x, int y, int width, int height, BufferedImage sprite) {
+    public Enemy02(int x, int y, int width, int height, BufferedImage sprite) {
         super(x, y, width, height, sprite);
 
         rightEnemy = new BufferedImage[2];
         leftEnemy = new BufferedImage[2];
 
         for (int i = 0; i < 2; i++) {
-            rightEnemy[i] = Game.spritesheet.getSprite(128 + (i * 16), 32, 16, 16);
+            rightEnemy[i] = Game.spritesheet.getSprite(96 + (i * 16), 32, 16, 16);
         }
 
         for (int i = 0; i < 2; i++) {
-            leftEnemy[i] = Game.spritesheet.getSprite(128 + (i * 16), 48, 16, 16);
+            leftEnemy[i] = Game.spritesheet.getSprite(96 + (i * 16), 48, 16, 16);
         }
 
     }
@@ -57,14 +55,17 @@ public class Enemy03 extends Entity {
 
     public void tick() {
 
-        maskx = 6;
-        masky = 3;
-        maskw = 8;
-        maskh = 12;
         moved = false;
 
         if (this.isCollidingWithPlayer() == false) {
             this.moviment();
+
+        } else if (this.isCollidingWithPlayer() == true && Game.LEVEL == 2) {
+            Game.player.life--;
+            if (Game.player.life == 0) {
+                Game.gameOver = true;
+                Sound.play("res/Menino.wav");
+            }
 
         } else if (this.isCollidingWithPlayer() == true && Game.LEVEL == 3) {
 
@@ -72,7 +73,6 @@ public class Enemy03 extends Entity {
 
             escudo = false;
             Game.entities.remove(this);
-            Game.enemies03.remove(this);
 
             Game.contador++;
         }
@@ -87,7 +87,6 @@ public class Enemy03 extends Entity {
                 }
             }
         }
-
     }
 
     public boolean isCollidingWithPlayer() {
@@ -103,7 +102,5 @@ public class Enemy03 extends Entity {
         } else if (dir == left_dir) {
             g.drawImage(leftEnemy[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
         }
-
     }
-
 }

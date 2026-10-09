@@ -1,11 +1,16 @@
-# Build artifacts
-/bin/
+# Build artifacts (Java)
+/java/bin/
 /classes/
 /out/
 *.class
 
+# Build artifacts (Zig)
+/zig/.zig-cache/
+/zig/zig-out/
+/zig/zig-pkg/
+
 # Generated documentation
-/doc/
+/java/doc/
 
 # Logs and JVM crash dumps
 *.log

@@ -10,12 +10,10 @@ import java.awt.image.BufferedImage;
 
 public class Enemy extends Entity {
 
-    public static String state = "GAMENORMAL";
     public static boolean escudo = true;
     public int right_dir = 0, left_dir = 1;
     public int dir = right_dir;
-    int timer = 0;
-    private int maskx = 6, masky = 3, maskw = 8, maskh = 12;
+    private final int maskx = 6, masky = 3, maskw = 8, maskh = 12;
     private double speed = 1.5;
     private BufferedImage[] rightEnemy;
     private BufferedImage[] leftEnemy;
@@ -57,10 +55,6 @@ public class Enemy extends Entity {
 
     public void tick() {
 
-        maskx = 6;
-        masky = 3;
-        maskw = 8;
-        maskh = 12;
         moved = false;
 
         if (this.isCollidingWithPlayer() == false) {
@@ -69,7 +63,7 @@ public class Enemy extends Entity {
         } else if (this.isCollidingWithPlayer() == true && Game.LEVEL == 1) {
             Game.player.life--;
             if (Game.player.life == 0) {
-                state = "GAMEOVER";
+                Game.gameOver = true;
                 Sound.play("res/Menino.wav");
             }
 
@@ -79,7 +73,6 @@ public class Enemy extends Entity {
 
             escudo = false;
             Game.entities.remove(this);
-            Game.enemies.remove(this);
 
             Game.contador++;
         }

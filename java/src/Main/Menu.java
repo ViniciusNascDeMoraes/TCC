@@ -3,15 +3,14 @@ package Main;
 import java.awt.*;
 
 public class Menu {
-    public String[] options = {"novo jogo", "creditos", "sair"};
+    // 0 = novo jogo, 1 = creditos, 2 = sair.
     public int optionAtual = 0;
-    public int optionMax = options.length - 1;
+    public int optionMax = 2;
     public int tam1, tam2, tam3, tam4;
 
-    public String txtmenu1 = "Novo jogo", txtmenu2 = "Cr�ditos",
+    public String txtmenu1 = "Novo jogo", txtmenu2 = "Créditos",
             txtmenu3 = "Sair";
-    public String txttitulocred = "Desenvolvido por:",
-            txtcred1 = "Voltar";
+    public String txtcred1 = "Voltar";
     public boolean w = false, s = false, enter = false;
     public boolean stateInicio = true, stateCreditos = false, stateJogo = false, stateLoading = false;
     public int time, volta, limiteVolta = 3;
@@ -114,11 +113,11 @@ public class Menu {
             tam3 = g.getFontMetrics().stringWidth(txtmenu3);
             g.drawString(txtmenu3, (Game.widthfm / 2) - (tam3 / 2), (Game.heightfm / 2) + 50);
 
-            if (options[optionAtual] == "novo jogo") {
+            if (optionAtual == 0) {
                 g.drawString(">", ((Game.widthfm / 2) - (tam1 / 2)) - 50, (Game.heightfm / 2) - 50);
-            } else if (options[optionAtual] == "creditos") {
+            } else if (optionAtual == 1) {
                 g.drawString(">", ((Game.widthfm / 2) - (tam2 / 2)) - 50, (Game.heightfm / 2));
-            } else if (options[optionAtual] == "sair") {
+            } else if (optionAtual == 2) {
                 g.drawString(">", ((Game.widthfm / 2) - (tam3 / 2)) - 50, (Game.heightfm / 2) + 50);
             }
 

@@ -7,6 +7,8 @@ import World.World;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
@@ -25,39 +27,36 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static BufferedImage Menu, Creditos, Morreu, ImagemFim, TelaVacina, Vacinando, Vacinando1, Vacinando2, Vacinando3;
 
     public static List<Entity> entities;
-    public static List<Enemy> enemies;
-    public static List<Enemy02> enemies02;
-    public static List<Enemy03> enemies03;
 
     public static Player player;
 
     public static int contador = 0;
+    // Inimigos criados no mapa do nivel atual (contados pelo World); no nivel 3 e preciso eliminar todos.
+    public static int totalInimigos = 0;
     public static World world;
     public static int widthfm = 0, heightfm = 0;
     public static Spritesheet spritesheet;
-    public static int tam1, tam2, tam3, tam4, tamtitulo, missao_texto, tam_vacina1, tam_vacina2, tam_vacina3,
-            tam_vacina6, tam_vacina4, tam_vacina5, tamtelafim, tamtelafim2;
+    public static int tam1, tam2;
     public static String txtmenu1 = "Retornar ao jogo", txtmenu2 = "Sair do jogo", txtgo1 = "Reiniciar a fase",
-            txtgo2 = "Sair do jogo", txttitulogo = "GAME OVER";
-    public static String tam5, tam6, tamtitulo2;
+            txtgo2 = "Sair do jogo";
     public static String txt_missao_texto = "Chegue no hospital", txt_missao_texto1 = "para se vacinar!",
-            txt_missao_texto3 = "Dica: Desvie das bact�rias.", txt_missao_texto4 = "V� para a �rea amarela",
-            txt_missao_texto5 = "para se vacinar", txt_missao_texto6 = "Utlize seu escudo para ",
-            txt_missao_texto7 = "eliminar todos os v�rus e bact�rias", txt_missao_texto8 = "Inimigos eliminados: ",
-            txt_missao_texto9 = "Todos os inimigos foram eliminados,", txt_missao_texto10 = "volte para casa!",
-            vacina1 = "VACINANDO", vacina2 = "VACINANDO.", vacina3 = "VACINANDO..", vacina4 = "VACINANDO...",
-            vacina5 = "AGORA VOCE ESTA IMUNE", vacina6 = "AOS V�RUS E BACT�RIAS", telafim = "VOCE CHEGOU AO FIM!", telafim2 = "Obrigado por jogar nosso jogo";
-    public static boolean pause = false, dialogo = false, vacinado = false;
-    public static int LEVEL = 1, MAX_LEVEL = 2;
-    public String[] options = {"op1", "op2"};
+            txt_missao_texto3 = "Dica: Desvie das bactérias.", txt_missao_texto4 = "Vá para a área amarela",
+            txt_missao_texto5 = "para se vacinar", txt_missao_texto6 = "Utilize seu escudo para ",
+            txt_missao_texto7 = "eliminar todos os vírus e bactérias", txt_missao_texto8 = "Inimigos eliminados: ",
+            txt_missao_texto9 = "Todos os inimigos foram eliminados,", txt_missao_texto10 = "volte para casa!";
+    public static boolean pause = false, dialogo = false, vacinado = false, gameOver = false;
+    public static int LEVEL = 1;
+    // Menus de pausa e de game over: 0 = primeira opcao, 1 = segunda.
     public int optionAtual = 0;
-    public int optionMax = options.length - 1;
+    public int optionMax = 1;
     public boolean w = false, s = false, enter = false;
     public Menu menu;
-    public int time, volta, limiteVolta = 3;
+    public int time, volta;
     private Thread thread;
     private BufferedImage image;
     private boolean running, fim = false;
+    // Esc e Enter ainda segurados: a auto-repeticao dessas teclas e ignorada.
+    private boolean escPressionado = false, enterPressionado = false;
 
     public Game() {
 
@@ -126,6 +125,17 @@ public class Game extends Canvas implements Runnable, KeyListener {
         }
 
         addKeyListener(this);
+        // Sem foco o AWT nao avisa quando as teclas sao soltas: considera todas soltas.
+        addFocusListener(new FocusAdapter() {
+            public void focusLost(FocusEvent e) {
+                escPressionado = false;
+                enterPressionado = false;
+                player.up = false;
+                player.down = false;
+                player.left = false;
+                player.right = false;
+            }
+        });
         setPreferredSize(new Dimension(width * scale, height * scale));
 
         frameinit();
@@ -134,9 +144,6 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
         spritesheet = new Spritesheet("/Spritesheet.png");
         entities = new ArrayList<Entity>();
-        enemies = new ArrayList<Enemy>();
-        enemies02 = new ArrayList<Enemy02>();
-        enemies03 = new ArrayList<Enemy03>();
         player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
         entities.add(player);
         world = new World("/level1.png");
@@ -189,6 +196,13 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 render();
                 frames++;
                 delta--;
+            } else {
+                // Ainda nao e hora do proximo quadro: libera a CPU em vez de girar em vazio.
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    return;
+                }
             }
 
             if (System.currentTimeMillis() - timer >= 1000) {
@@ -203,16 +217,19 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
     public void tick() {
 
-        if (menu.stateInicio == true || menu.stateCreditos == true && pause == false && Enemy.state == "GAMENORMAL"
-                && Enemy02.state == "GAMENORMAL" && Enemy03.state == "GAMENORMAL") {
+        if (menu.stateInicio == true || menu.stateCreditos == true && pause == false && gameOver == false) {
 
             menu.tick();
 
-        } else if (menu.stateJogo == true && pause == false && Enemy.state == "GAMENORMAL"
-                && Enemy02.state == "GAMENORMAL" && Enemy03.state == "GAMENORMAL" && dialogo == false) {
+        } else if (menu.stateJogo == true && pause == false && gameOver == false && dialogo == false
+                && fim == false) {
             for (int i = 0; i < entities.size(); i++) {
                 Entity e = entities.get(i);
                 e.tick();
+                // Um inimigo eliminado sai da lista; volta o indice para o seguinte nao perder o tick.
+                if (i < entities.size() && entities.get(i) != e) {
+                    i--;
+                }
             }
 
             if (player.getY() < 80 && LEVEL == 1) {
@@ -233,39 +250,23 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 vacinado = false;
             }
 
-            System.out.println("Y: " + player.getY());
-            System.out.println("X: " + player.getX());
-
-        } else if (pause == true && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
-                && Enemy03.state == "GAMENORMAL") {
-            if (w == true) {
-
-                Sound.play("res/Menu.wav");
-
-                w = false;
-                optionAtual--;
-
-                if (optionAtual < 0) {
-
-                    optionAtual = optionMax;
-
-                }
-
+            // Todos os inimigos eliminados e o jogador chegou em casa: fim de jogo.
+            if (LEVEL == 3 && contador >= totalInimigos && player.getY() < 175 && player.getX() > 559
+                    && player.getX() < 593) {
+                fim = true;
             }
 
-            if (s == true) {
+        } else if (fim == true) {
+            if (enter == true) {
 
-                Sound.play("res/Menu.wav");
+                Sound.play("res/Select.wav");
 
-                s = false;
-                optionAtual++;
+                enter = false;
+                voltarAoMenu();
 
-                if (optionAtual > optionMax) {
-
-                    optionAtual = 0;
-
-                }
             }
+        } else if (pause == true && gameOver == false) {
+            navegarOpcoes();
 
             if (enter == true) {
 
@@ -284,35 +285,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
                 }
             }
-        } else if (Enemy.state == "GAMEOVER" || Enemy02.state == "GAMEOVER" || Enemy03.state == "GAMEOVER") {
-            if (w == true) {
-
-                Sound.play("res/Menu.wav");
-
-                w = false;
-                optionAtual--;
-
-                if (optionAtual < 0) {
-
-                    optionAtual = optionMax;
-
-                }
-
-            }
-
-            if (s == true) {
-
-                Sound.play("res/Menu.wav");
-
-                s = false;
-                optionAtual++;
-
-                if (optionAtual > optionMax) {
-
-                    optionAtual = 0;
-
-                }
-            }
+        } else if (gameOver == true) {
+            navegarOpcoes();
 
             if (enter == true) {
 
@@ -321,9 +295,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 enter = false;
 
                 if (optionAtual == 0) {
-                    Enemy.state = "GAMENORMAL";
-                    Enemy02.state = "GAMENORMAL";
-                    Enemy03.state = "GAMENORMAL";
+                    gameOver = false;
                     String newWorld = "level" + LEVEL + ".png";
                     World.restartGame(newWorld);
 
@@ -337,6 +309,40 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
     }
 
+    /**
+     * W/S nos menus de pausa e de game over.
+     */
+    private void navegarOpcoes() {
+        if (w == true) {
+
+            Sound.play("res/Menu.wav");
+
+            w = false;
+            optionAtual--;
+
+            if (optionAtual < 0) {
+
+                optionAtual = optionMax;
+
+            }
+
+        }
+
+        if (s == true) {
+
+            Sound.play("res/Menu.wav");
+
+            s = false;
+            optionAtual++;
+
+            if (optionAtual > optionMax) {
+
+                optionAtual = 0;
+
+            }
+        }
+    }
+
     public void render() {
         BufferStrategy bs = this.getBufferStrategy();
         if (bs == null) {
@@ -348,8 +354,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
         g.setColor(new Color(0, 0, 0));
         g.fillRect(0, 0, widthfm, heightfm);
 
-        if (menu.stateJogo == true && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
-                && Enemy03.state == "GAMENORMAL") {
+        if (menu.stateJogo == true && gameOver == false) {
 
             world.render(g);
             for (int i = 0; i < entities.size(); i++) {
@@ -368,8 +373,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
             menu.render(g);
 
-        } else if (pause == true && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
-                && Enemy03.state == "GAMENORMAL") {
+        } else if (fim == true) {
+            g.setColor(BLUE);
+            g.fillRect(0, 0, Game.widthfm, Game.heightfm);
+
+            g.drawImage(Game.ImagemFim, 0, 0, Game.widthfm, Game.heightfm, null);
+        } else if (pause == true && gameOver == false) {
             g.setColor(Color.white);
             g.setFont(new Font("Bookman Old Style", Font.BOLD, 30));
             tam1 = g.getFontMetrics().stringWidth(txtmenu1);
@@ -377,13 +386,13 @@ public class Game extends Canvas implements Runnable, KeyListener {
             tam2 = g.getFontMetrics().stringWidth(txtmenu2);
             g.drawString(txtmenu2, (Game.widthfm / 2) - (tam2 / 2), (Game.heightfm / 2));
 
-            if (options[optionAtual] == "op1") {
+            if (optionAtual == 0) {
                 g.drawString(">", ((Game.widthfm / 2) - (tam1 / 2)) - 40, (Game.heightfm / 2) - 50);
-            } else if (options[optionAtual] == "op2") {
+            } else if (optionAtual == 1) {
                 g.drawString(">", ((Game.widthfm / 2) - (tam2 / 2)) - 40, (Game.heightfm / 2));
             }
 
-        } else if (Enemy.state == "GAMEOVER" || Enemy02.state == "GAMEOVER" || Enemy03.state == "GAMEOVER") {
+        } else if (gameOver == true) {
 
             g.drawImage(Game.Morreu, 0, 0, Game.widthfm, Game.heightfm, null);
 
@@ -394,9 +403,9 @@ public class Game extends Canvas implements Runnable, KeyListener {
             tam2 = g.getFontMetrics().stringWidth(txtgo2);
             g.drawString(txtgo2, (Game.widthfm / 2) - (tam2 / 2), (Game.heightfm / 2));
 
-            if (options[optionAtual] == "op1") {
+            if (optionAtual == 0) {
                 g.drawString(">", ((Game.widthfm / 2) - (tam1 / 2)) - 40, (Game.heightfm / 2) - 50);
-            } else if (options[optionAtual] == "op2") {
+            } else if (optionAtual == 1) {
                 g.drawString(">", ((Game.widthfm / 2) - (tam2 / 2)) - 40, (Game.heightfm / 2));
             }
         } else if (player.getY() < 20 && player.getX() > 93 && player.getX() < 98 && LEVEL == 2) {
@@ -453,33 +462,22 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 vacinado = true;
             }
 
-        } else if (player.getY() < 175 && player.getX() > 559 && player.getX() < 593 && LEVEL == 3 && contador > 21) {
-            fim = true;
-
-            g.clearRect(0, 0, Game.widthfm, Game.heightfm);
-            g.setColor(BLUE);
-            g.fillRect(0, 0, Game.widthfm, Game.heightfm);
-
-            g.drawImage(Game.ImagemFim, 0, 0, Game.widthfm, Game.heightfm, null);
         }
 
-        if (LEVEL == 1 && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL" && Enemy03.state == "GAMENORMAL"
-                && menu.stateJogo == true && player.getY() > 160) {
+        if (LEVEL == 1 && gameOver == false && menu.stateJogo == true && player.getY() > 160) {
             g.setColor(Color.WHITE);
             g.setFont(new Font("Bookman Old Style", Font.BOLD, 23));
             g.drawString(txt_missao_texto, 15, 30);
             g.drawString(txt_missao_texto1, 15, 60);
             g.drawString(txt_missao_texto3, 15, 100);
-        } else if (LEVEL == 2 && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
-                && Enemy03.state == "GAMENORMAL" && menu.stateJogo == true && vacinado == false && dialogo == false) {
+        } else if (LEVEL == 2 && gameOver == false && menu.stateJogo == true && vacinado == false && dialogo == false) {
 
             g.setColor(Color.BLACK);
             g.setFont(new Font("Bookman Old Style", Font.BOLD, 20));
             g.drawString(txt_missao_texto4, 15, 30);
             g.drawString(txt_missao_texto5, 15, 60);
-        } else if (LEVEL == 3 && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
-                && Enemy03.state == "GAMENORMAL" && menu.stateJogo == true && player.getY() > 160) {
-            if (Game.contador < 22) {
+        } else if (LEVEL == 3 && gameOver == false && menu.stateJogo == true && player.getY() > 160) {
+            if (Game.contador < totalInimigos) {
                 g.setColor(Color.WHITE);
                 g.setFont(new Font("Bookman Old Style", Font.BOLD, 23));
                 g.drawString(txt_missao_texto6, 15, 30);
@@ -487,7 +485,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 g.drawString(txt_missao_texto8, 15, 100);
                 g.drawString("" + contador, 275, 101);
             }
-            if (Game.contador > 21 && fim == false) {
+            if (Game.contador >= totalInimigos && fim == false) {
                 g.setColor(Color.WHITE);
                 g.setFont(new Font("Bookman Old Style", Font.BOLD, 20));
                 g.drawString(txt_missao_texto9, 15, 30);
@@ -498,25 +496,58 @@ public class Game extends Canvas implements Runnable, KeyListener {
         bs.show();
     }
 
+    /**
+     * Depois da tela final: zera o progresso do jogo e volta ao menu inicial.
+     */
+    private void voltarAoMenu() {
+        LEVEL = 1;
+        contador = 0;
+        pause = false;
+        dialogo = false;
+        vacinado = false;
+        gameOver = false;
+        fim = false;
+        time = 0;
+        volta = 0;
+        optionAtual = 0;
+        w = false;
+        s = false;
+        enter = false;
+        Enemy.escudo = true;
+        Enemy02.escudo = true;
+        Enemy03.escudo = true;
+        menu = new Menu();
+        World.restartGame("level1.png");
+    }
+
     public void keyPressed(KeyEvent e) {
-        if (menu.stateInicio == true && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
-                && Enemy03.state == "GAMENORMAL") {
+        // Esc e Enter so contam quando apertados de novo: segurar a tecla nao repete a acao.
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            if (escPressionado == true) {
+                return;
+            }
+            escPressionado = true;
+        } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            if (enterPressionado == true) {
+                return;
+            }
+            enterPressionado = true;
+        }
+
+        if (menu.stateInicio == true && gameOver == false) {
             if (e.getKeyCode() == KeyEvent.VK_W) {
                 menu.w = true;
             } else if (e.getKeyCode() == KeyEvent.VK_S) {
                 menu.s = true;
             }
-            if (e.getKeyCode() == KeyEvent.VK_ENTER && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
-                    && Enemy03.state == "GAMENORMAL") {
+            if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                 menu.enter = true;
             }
-        } else if (menu.stateCreditos == true && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
-                && Enemy03.state == "GAMENORMAL") {
+        } else if (menu.stateCreditos == true && gameOver == false) {
             if (e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                 menu.enter = true;
             }
-        } else if (menu.stateJogo == true && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL" && fim == false
-                && Enemy03.state == "GAMENORMAL") {
+        } else if (menu.stateJogo == true && gameOver == false && fim == false) {
             if (e.getKeyCode() == KeyEvent.VK_W) {
                 player.up = true;
             } else if (e.getKeyCode() == KeyEvent.VK_S) {
@@ -529,13 +560,20 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 player.left = true;
             }
 
-            if (e.getKeyCode() == KeyEvent.VK_ESCAPE && Enemy.state == "GAMENORMAL" && Enemy02.state == "GAMENORMAL"
-                    && Enemy03.state == "GAMENORMAL") {
-                pause = true;
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                if (pause == true) {
+                    // Descarta W/S/Enter apertados no menu de pausa e ainda nao processados.
+                    pause = false;
+                    optionAtual = 0;
+                    w = false;
+                    s = false;
+                    enter = false;
+                } else {
+                    pause = true;
+                }
             }
 
-            if (e.getKeyCode() == KeyEvent.VK_W && pause == true || Enemy.state == "GAMEOVER"
-                    || Enemy02.state == "GAMEOVER" || Enemy03.state == "GAMEOVER") {
+            if (e.getKeyCode() == KeyEvent.VK_W && pause == true) {
                 w = true;
             } else if (e.getKeyCode() == KeyEvent.VK_S && pause == true) {
                 s = true;
@@ -543,7 +581,11 @@ public class Game extends Canvas implements Runnable, KeyListener {
             if (e.getKeyCode() == KeyEvent.VK_ENTER && pause == true) {
                 enter = true;
             }
-        } else if (Enemy.state == "GAMEOVER" || Enemy02.state == "GAMEOVER" || Enemy03.state == "GAMEOVER") {
+        } else if (menu.stateJogo == true && fim == true) {
+            if (e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                enter = true;
+            }
+        } else if (gameOver == true) {
             if (e.getKeyCode() == KeyEvent.VK_W) {
                 w = true;
             } else if (e.getKeyCode() == KeyEvent.VK_S) {
@@ -557,6 +599,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
     }
 
     public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            escPressionado = false;
+        } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            enterPressionado = false;
+        }
+
         if (menu.stateJogo == true) {
             if (e.getKeyCode() == KeyEvent.VK_W) {
                 player.up = false;
