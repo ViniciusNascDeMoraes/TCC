@@ -186,7 +186,7 @@ pub const Window = struct {
         try b.u32_(0); // visual do pai
         try b.u32_(0x800); // so a mascara de eventos
         const m = proto.event_mask;
-        try b.u32_(m.key_press | m.key_release | m.exposure | m.structure_notify | m.focus_change);
+        try b.u32_(m.key_press | m.key_release | m.focus_change);
         b.end();
 
         const names = [_][]const u8{ "WM_PROTOCOLS", "WM_DELETE_WINDOW", "_NET_WM_NAME", "UTF8_STRING" };

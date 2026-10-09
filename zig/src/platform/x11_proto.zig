@@ -189,9 +189,7 @@ pub const opcode = struct {
     pub const change_property = 18;
     pub const get_input_focus = 43;
     pub const create_pixmap = 53;
-    pub const free_pixmap = 54;
     pub const create_gc = 55;
-    pub const free_gc = 60;
     pub const copy_area = 62;
     pub const put_image = 72;
     pub const query_extension = 98;
@@ -200,7 +198,6 @@ pub const opcode = struct {
 
 pub const atom = struct {
     pub const atom_type = 4;
-    pub const cardinal = 6;
     pub const string = 31;
     pub const wm_name = 39;
     pub const wm_normal_hints = 40;
@@ -211,8 +208,6 @@ pub const atom = struct {
 pub const event_mask = struct {
     pub const key_press = 0x1;
     pub const key_release = 0x2;
-    pub const exposure = 0x8000;
-    pub const structure_notify = 0x20000;
     pub const focus_change = 0x200000;
 };
 
