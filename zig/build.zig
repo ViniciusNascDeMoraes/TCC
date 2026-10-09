@@ -26,6 +26,11 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
+    // No Windows, builds otimizados abrem sem a janela de console; o Debug
+    // mantem o console para o log de FPS.
+    if (target.result.os.tag == .windows and optimize != .Debug) {
+        exe.subsystem = .windows;
+    }
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
