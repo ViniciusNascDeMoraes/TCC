@@ -6,5 +6,7 @@ test {
     _ = @import("camera.zig");
     _ = @import("canvas.zig");
     _ = @import("png.zig");
+    _ = @import("wav.zig");
+    _ = @import("mixer.zig");
     _ = @import("ttf.zig");
 }
