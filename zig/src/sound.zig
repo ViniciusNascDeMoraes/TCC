@@ -22,10 +22,16 @@ pub const SoundId = enum {
 /// Os WAVs embutidos, na ordem de `SoundId`, lidos em tempo de compilacao:
 /// um arquivo em formato inesperado quebra o build.
 pub const pcm = blk: {
-    const files = [_][]const u8{ assets.som_menu, assets.som_select, assets.som_menino, assets.som_monstro };
+    const files = [_]struct { []const u8, []const u8 }{
+        .{ "Menu.wav", assets.som_menu },
+        .{ "Select.wav", assets.som_select },
+        .{ "Menino.wav", assets.som_menino },
+        .{ "Monstro.wav", assets.som_monstro },
+    };
+    std.debug.assert(files.len == std.enums.values(SoundId).len);
     var list: [files.len]wav.Pcm = undefined;
-    for (files, &list, std.enums.values(SoundId)) |file, *p, id| {
-        p.* = wav.parse(file) catch |err| @compileError("res/" ++ @tagName(id) ++ ".wav: " ++ @errorName(err));
+    for (files, &list) |file, *p| {
+        p.* = wav.parse(file[1]) catch |err| @compileError("res/" ++ file[0] ++ ": " ++ @errorName(err));
     }
     break :blk list;
 };
