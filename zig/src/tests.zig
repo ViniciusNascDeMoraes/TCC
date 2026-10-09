@@ -8,5 +8,6 @@ test {
     _ = @import("png.zig");
     _ = @import("wav.zig");
     _ = @import("mixer.zig");
+    _ = @import("raster.zig");
     _ = @import("ttf.zig");
 }
