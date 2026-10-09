@@ -31,10 +31,11 @@ pub const pcm = blk: {
 };
 
 pub const Sounds = struct {
-    /// Sem dispositivo de audio o som so nao toca, como o "play sound error" do Java.
-    mixer: ?*Mixer = null,
+    /// Sem servidor de audio ninguem consome os pedidos e o som so nao toca,
+    /// como o "play sound error" do Java.
+    mixer: *Mixer,
 
     pub fn play(self: Sounds, id: SoundId) void {
-        if (self.mixer) |mixer| mixer.play(@intFromEnum(id));
+        self.mixer.play(@intFromEnum(id));
     }
 };

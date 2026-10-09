@@ -138,8 +138,8 @@ pub const Game = struct {
 
     const option_max = 1;
 
-    /// `mixer` e `null` quando nao ha audio. `io` le as fontes do sistema.
-    pub fn init(self: *Game, gpa: std.mem.Allocator, io: std.Io, mixer: ?*Mixer) !void {
+    /// `mixer` recebe os pedidos de som; `io` le as fontes do sistema.
+    pub fn init(self: *Game, gpa: std.mem.Allocator, io: std.Io, mixer: *Mixer) !void {
         const spritesheet: Spritesheet = try .load(gpa);
         errdefer spritesheet.unload(gpa);
         const screens: Screens = try .load(gpa);

@@ -7,7 +7,8 @@ const iovec_const = std.posix.iovec_const;
 
 pub const Error = error{ ConnectFailed, ConnectionClosed, SystemError };
 
-/// Valor de retorno de uma syscall, repetindo quando interrompida por sinal.
+/// Converte o retorno de uma syscall em erro. Quem chama repete a syscall
+/// quando ela e interrompida por sinal (`interrupted`).
 fn check(rc: usize) Error!usize {
     return switch (linux.errno(rc)) {
         .SUCCESS => rc,
@@ -45,11 +46,6 @@ pub fn connectUnix(path: []const u8, abstract: bool) Error!i32 {
 
 pub fn close(fd: i32) void {
     _ = linux.close(fd);
-}
-
-/// Faz `read` bloqueado retornar 0 (usado para parar a thread de audio).
-pub fn shutdown(fd: i32) void {
-    _ = linux.shutdown(fd, linux.SHUT.RDWR);
 }
 
 /// Envia todos os bytes de `parts`, com `control` (dados auxiliares) junto
