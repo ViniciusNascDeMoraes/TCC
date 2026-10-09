@@ -112,7 +112,8 @@ pub const Path = struct {
 /// Quantidade de segmentos para um erro proporcional a `k / n^2`.
 fn segments(k: f32) usize {
     const n = @ceil(@sqrt(k));
-    return if (n < 1) 1 else if (n > 64) 64 else @intFromFloat(n);
+    // NaN cai no ultimo caso; pontos invalidos sao recusados em `rasterize`.
+    return if (n > 64) 64 else if (n >= 1) @intFromFloat(n) else 1;
 }
 
 /// Retangulo de pixels de um glifo rasterizado, relativo a origem do glifo
@@ -125,22 +126,34 @@ pub const Box = struct {
     offset: usize = 0,
 };
 
+/// Maior lado aceito para um glifo, em pixels (o maior texto do jogo tem
+/// 50 px). Um contorno maior, ou com coordenadas invalidas, vem de uma fonte
+/// estragada, que entao e ignorada.
+pub const max_glyph_side = 1024;
+
+pub const Error = std.mem.Allocator.Error || error{GlyphTooLarge};
+
 /// Rasteriza `path` (ja fechado) e acrescenta a cobertura em `pool`.
-pub fn rasterize(gpa: std.mem.Allocator, path: *const Path, pool: *std.ArrayList(u8)) !Box {
+pub fn rasterize(gpa: std.mem.Allocator, path: *const Path, pool: *std.ArrayList(u8)) Error!Box {
     if (path.lines.items.len == 0) return .{ .offset = pool.items.len };
 
     var min: Point = path.lines.items[0].p0;
     var max: Point = min;
     for (path.lines.items) |line| {
         for ([_]Point{ line.p0, line.p1 }) |p| {
+            if (!std.math.isFinite(p.x) or !std.math.isFinite(p.y)) return error.GlyphTooLarge;
             min = .{ .x = @min(min.x, p.x), .y = @min(min.y, p.y) };
             max = .{ .x = @max(max.x, p.x), .y = @max(max.y, p.y) };
         }
     }
     const x0 = @floor(min.x);
     const y0 = @floor(min.y);
-    const width: u32 = @intFromFloat(@ceil(max.x) - x0);
-    const height: u32 = @intFromFloat(@ceil(max.y) - y0);
+    const w = @ceil(max.x) - x0;
+    const h = @ceil(max.y) - y0;
+    const limit: f32 = max_glyph_side;
+    if (w > limit or h > limit or @abs(x0) > limit or @abs(y0) > limit) return error.GlyphTooLarge;
+    const width: u32 = @intFromFloat(w);
+    const height: u32 = @intFromFloat(h);
     var box: Box = .{
         .x0 = @intFromFloat(x0),
         .y0 = @intFromFloat(y0),
@@ -309,6 +322,23 @@ test "area coberta de um circulo e de um triangulo" {
     // Area sob a parabola: 2/3 * base * altura do controle / 2 = 30 * 5 * 2 / 3.
     const quad_area = @as(f32, @floatFromInt(coverageSum(pool.items))) / 255;
     try testing.expectApproxEqRel(@as(f32, 100), quad_area, 0.02);
+}
+
+test "contornos enormes ou invalidos sao recusados" {
+    var path: Path = .init(testing.allocator, 1);
+    defer path.deinit();
+    var pool: std.ArrayList(u8) = .empty;
+    defer pool.deinit(testing.allocator);
+    try rect(&path, 0, 0, 5000, 10);
+    try testing.expectError(error.GlyphTooLarge, rasterize(testing.allocator, &path, &pool));
+
+    path.reset();
+    try path.moveTo(0, 0);
+    try path.quadTo(std.math.nan(f32), 1, 2, 2);
+    try path.lineTo(std.math.inf(f32), 0);
+    try path.close();
+    try testing.expectError(error.GlyphTooLarge, rasterize(testing.allocator, &path, &pool));
+    try testing.expectEqual(@as(usize, 0), pool.items.len);
 }
 
 test "contorno vazio nao gera pixels" {
