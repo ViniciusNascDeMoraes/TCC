@@ -189,6 +189,13 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 render();
                 frames++;
                 delta--;
+            } else {
+                // Ainda nao e hora do proximo quadro: libera a CPU em vez de girar em vazio.
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    return;
+                }
             }
 
             if (System.currentTimeMillis() - timer >= 1000) {
