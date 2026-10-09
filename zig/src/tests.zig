@@ -11,4 +11,5 @@ test {
     _ = @import("raster.zig");
     _ = @import("cff.zig");
     _ = @import("ttf.zig");
+    _ = @import("bitmap_font.zig");
 }
