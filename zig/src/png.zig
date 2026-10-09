@@ -274,8 +274,8 @@ test "pixels conhecidos do spritesheet e dos niveis" {
 test "filtros sub, up, average e paeth" {
     // 2 linhas RGB de 2 pixels, ja sem zlib: testa so `unfilter`.
     var raw = [_]u8{
-        1, 10, 20, 30, 5, 5,  5,
-        4, 1,  1,  1,  2, 2,  2,
+        1, 10, 20, 30, 5, 5, 5,
+        4, 1,  1,  1,  2, 2, 2,
     };
     try unfilter(&raw, 6, 2, 3);
     try testing.expectEqualSlices(u8, &.{ 10, 20, 30, 15, 25, 35 }, raw[1..7]);
