@@ -204,7 +204,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
             menu.tick();
 
-        } else if (menu.stateJogo == true && pause == false && gameOver == false && dialogo == false) {
+        } else if (menu.stateJogo == true && pause == false && gameOver == false && dialogo == false
+                && fim == false) {
             for (int i = 0; i < entities.size(); i++) {
                 Entity e = entities.get(i);
                 e.tick();
@@ -228,6 +229,15 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 vacinado = false;
             }
 
+        } else if (fim == true) {
+            if (enter == true) {
+
+                Sound.play("res/Select.wav");
+
+                enter = false;
+                voltarAoMenu();
+
+            }
         } else if (pause == true && gameOver == false) {
             if (w == true) {
 
@@ -440,7 +450,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 vacinado = true;
             }
 
-        } else if (player.getY() < 175 && player.getX() > 559 && player.getX() < 593 && LEVEL == 3 && contador > 21) {
+        } else if (fim == true
+                || player.getY() < 175 && player.getX() > 559 && player.getX() < 593 && LEVEL == 3 && contador > 21) {
             fim = true;
 
             g.clearRect(0, 0, Game.widthfm, Game.heightfm);
@@ -482,6 +493,30 @@ public class Game extends Canvas implements Runnable, KeyListener {
         bs.show();
     }
 
+    /**
+     * Depois da tela final: zera o progresso do jogo e volta ao menu inicial.
+     */
+    private void voltarAoMenu() {
+        LEVEL = 1;
+        contador = 0;
+        pause = false;
+        dialogo = false;
+        vacinado = false;
+        gameOver = false;
+        fim = false;
+        time = 0;
+        volta = 0;
+        optionAtual = 0;
+        w = false;
+        s = false;
+        enter = false;
+        Enemy.escudo = true;
+        Enemy02.escudo = true;
+        Enemy03.escudo = true;
+        menu = new Menu();
+        World.restartGame("level1.png");
+    }
+
     public void keyPressed(KeyEvent e) {
         if (menu.stateInicio == true && gameOver == false) {
             if (e.getKeyCode() == KeyEvent.VK_W) {
@@ -519,6 +554,10 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 s = true;
             }
             if (e.getKeyCode() == KeyEvent.VK_ENTER && pause == true) {
+                enter = true;
+            }
+        } else if (menu.stateJogo == true && fim == true) {
+            if (e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                 enter = true;
             }
         } else if (gameOver == true) {

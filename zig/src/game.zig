@@ -156,10 +156,30 @@ pub const Game = struct {
         try world_mod.restartGame(self);
     }
 
+    /// Depois da tela final: zera o progresso do jogo e volta ao menu inicial.
+    fn voltarAoMenu(self: *Game) !void {
+        self.level = 1;
+        self.contador = 0;
+        self.pause = false;
+        self.dialogo = false;
+        self.vacinado = false;
+        self.game_over = false;
+        self.fim = false;
+        self.time = 0;
+        self.volta = 0;
+        self.option_atual = 0;
+        self.w = false;
+        self.s = false;
+        self.enter = false;
+        self.escudo = @splat(true);
+        self.menu = .{};
+        try self.restartGame();
+    }
+
     pub fn tick(self: *Game) !void {
         if (self.menu.state_inicio or self.menu.state_creditos and !self.pause and self.normal()) {
             self.menu.tick(self);
-        } else if (self.menu.state_jogo and !self.pause and self.normal() and !self.dialogo) {
+        } else if (self.menu.state_jogo and !self.pause and self.normal() and !self.dialogo and !self.fim) {
             self.player.tick(self);
             // Como no Java, o inimigo seguinte a um removido so tica no proximo quadro.
             var i: usize = 0;
@@ -176,6 +196,13 @@ pub const Game = struct {
                 self.level = 3;
                 try self.restartGame();
                 self.vacinado = false;
+            }
+        } else if (self.fim) {
+            // Tela final: tudo parado ate Enter/Esc.
+            if (self.enter) {
+                self.sounds.play(.select);
+                self.enter = false;
+                try self.voltarAoMenu();
             }
         } else if (self.pause and self.normal()) {
             self.navigateOptions();
@@ -290,7 +317,9 @@ pub const Game = struct {
                 self.dialogo = false;
                 self.vacinado = true;
             }
-        } else if (self.player.getY() < 175 and self.player.getX() > 559 and self.player.getX() < 593 and self.level == 3 and self.contador > 21) {
+        } else if (self.fim or
+            self.player.getY() < 175 and self.player.getX() > 559 and self.player.getX() < 593 and self.level == 3 and self.contador > 21)
+        {
             self.fim = true;
             gfx.fillScreen(gfx.blue);
             gfx.drawScreen(self.screens.imagem_fim);
@@ -396,6 +425,10 @@ pub const Game = struct {
                 self.s = true;
             }
             if (key == rl.KEY_ENTER and self.pause) {
+                self.enter = true;
+            }
+        } else if (self.menu.state_jogo and self.fim) {
+            if (key == rl.KEY_ENTER or key == rl.KEY_ESCAPE) {
                 self.enter = true;
             }
         } else if (self.game_over) {
