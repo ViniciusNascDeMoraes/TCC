@@ -42,11 +42,11 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static String tam5, tam6, tamtitulo2;
     public static String txt_missao_texto = "Chegue no hospital", txt_missao_texto1 = "para se vacinar!",
             txt_missao_texto3 = "Dica: Desvie das bactérias.", txt_missao_texto4 = "Vá para a área amarela",
-            txt_missao_texto5 = "para se vacinar", txt_missao_texto6 = "Utlize seu escudo para ",
+            txt_missao_texto5 = "para se vacinar", txt_missao_texto6 = "Utilize seu escudo para ",
             txt_missao_texto7 = "eliminar todos os vírus e bactérias", txt_missao_texto8 = "Inimigos eliminados: ",
             txt_missao_texto9 = "Todos os inimigos foram eliminados,", txt_missao_texto10 = "volte para casa!",
             vacina1 = "VACINANDO", vacina2 = "VACINANDO.", vacina3 = "VACINANDO..", vacina4 = "VACINANDO...",
-            vacina5 = "AGORA VOCE ESTA IMUNE", vacina6 = "AOS VÍRUS E BACTÉRIAS", telafim = "VOCE CHEGOU AO FIM!", telafim2 = "Obrigado por jogar nosso jogo";
+            vacina5 = "AGORA VOCÊ ESTÁ IMUNE", vacina6 = "AOS VÍRUS E BACTÉRIAS", telafim = "VOCÊ CHEGOU AO FIM!", telafim2 = "Obrigado por jogar nosso jogo";
     public static boolean pause = false, dialogo = false, vacinado = false;
     public static int LEVEL = 1, MAX_LEVEL = 2;
     public String[] options = {"op1", "op2"};
