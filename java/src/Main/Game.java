@@ -31,7 +31,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static Player player;
 
     public static int contador = 0;
-    // Inimigos criados no mapa do nivel atual; no nivel 3 e preciso eliminar todos.
+    // Inimigos criados no mapa do nivel atual (contados pelo World); no nivel 3 e preciso eliminar todos.
     public static int totalInimigos = 0;
     public static World world;
     public static int widthfm = 0, heightfm = 0;
@@ -223,9 +223,13 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
         } else if (menu.stateJogo == true && pause == false && gameOver == false && dialogo == false
                 && fim == false) {
-            // Percorre uma copia: um inimigo que sai da lista nao faz o seguinte perder o tick.
-            for (Entity e : new ArrayList<Entity>(entities)) {
+            for (int i = 0; i < entities.size(); i++) {
+                Entity e = entities.get(i);
                 e.tick();
+                // Um inimigo eliminado sai da lista; volta o indice para o seguinte nao perder o tick.
+                if (i < entities.size() && entities.get(i) != e) {
+                    i--;
+                }
             }
 
             if (player.getY() < 80 && LEVEL == 1) {
@@ -556,7 +560,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
             } else if (e.getKeyCode() == KeyEvent.VK_S) {
                 menu.s = true;
             }
-            if (e.getKeyCode() == KeyEvent.VK_ENTER && gameOver == false) {
+            if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                 menu.enter = true;
             }
         } else if (menu.stateCreditos == true && gameOver == false) {
@@ -576,7 +580,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 player.left = true;
             }
 
-            if (e.getKeyCode() == KeyEvent.VK_ESCAPE && gameOver == false) {
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                 if (pause == true) {
                     // Descarta W/S/Enter apertados no menu de pausa e ainda nao processados.
                     pause = false;
@@ -589,7 +593,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 }
             }
 
-            if (e.getKeyCode() == KeyEvent.VK_W && pause == true || gameOver == true) {
+            if (e.getKeyCode() == KeyEvent.VK_W && pause == true) {
                 w = true;
             } else if (e.getKeyCode() == KeyEvent.VK_S && pause == true) {
                 s = true;

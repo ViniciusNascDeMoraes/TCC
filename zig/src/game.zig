@@ -415,7 +415,7 @@ pub const Game = struct {
             } else if (key == rl.KEY_S) {
                 self.menu.s = true;
             }
-            if (key == rl.KEY_ENTER and self.normal()) {
+            if (key == rl.KEY_ENTER) {
                 self.menu.enter = true;
             }
         } else if (self.menu.state_creditos and self.normal()) {
@@ -435,7 +435,7 @@ pub const Game = struct {
                 self.player.left = true;
             }
 
-            if (key == rl.KEY_ESCAPE and self.normal()) {
+            if (key == rl.KEY_ESCAPE) {
                 if (self.pause) {
                     // Descarta W/S/Enter apertados no menu de pausa e ainda nao processados.
                     self.pause = false;
@@ -448,7 +448,7 @@ pub const Game = struct {
                 }
             }
 
-            if (key == rl.KEY_W and self.pause or self.game_over) {
+            if (key == rl.KEY_W and self.pause) {
                 self.w = true;
             } else if (key == rl.KEY_S and self.pause) {
                 self.s = true;

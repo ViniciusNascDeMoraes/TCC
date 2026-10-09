@@ -19,6 +19,8 @@ public class World {
 
     public World(String path) {
 
+        // Inimigos criados neste mapa; no nivel 3 e preciso eliminar todos.
+        Game.totalInimigos = 0;
         try {
             BufferedImage map = ImageIO.read(getClass().getResource(path));
             int[] pixels = new int[map.getWidth() * map.getHeight()];
@@ -50,6 +52,7 @@ public class World {
                         } else if (pixelAtual == 0xFFFF0000) {
                             Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.enemy_en);
                             Game.entities.add(en);
+                            Game.totalInimigos++;
                         } else if (pixelAtual == 0xFF000000) {
                             tiles[xx + (yy * width)] = new Asfalto(xx * 16, yy * 16, Tile.Asfalto);
                         } else if (pixelAtual == 0xFF66FFED) {
@@ -95,6 +98,7 @@ public class World {
                         } else if (pixelAtual == 0xFF7F0037) {
                             Enemy02 en02 = new Enemy02(xx * 16, yy * 16, 16, 16, Entity.enemy_en02);
                             Game.entities.add(en02);
+                            Game.totalInimigos++;
                         } else if (pixelAtual == 0xFFF4FF68) {
                             tiles[xx + (yy * width)] = new C1(xx * 16, yy * 16, Tile.C1);
                         } else if (pixelAtual == 0xFFFFD760) {
@@ -120,12 +124,15 @@ public class World {
                         } else if (pixelAtual == 0xFFFF0000) {
                             Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.enemy_en);
                             Game.entities.add(en);
+                            Game.totalInimigos++;
                         } else if (pixelAtual == 0xFFFF5956) {
                             Enemy02 en2 = new Enemy02(xx * 16, yy * 16, 16, 16, Entity.enemy_en02);
                             Game.entities.add(en2);
+                            Game.totalInimigos++;
                         } else if (pixelAtual == 0xFFFF96A0) {
                             Enemy03 en3 = new Enemy03(xx * 16, yy * 16, 16, 16, Entity.enemy_en03);
                             Game.entities.add(en3);
+                            Game.totalInimigos++;
                         } else if (pixelAtual == 0xFF000000) {
                             tiles[xx + (yy * width)] = new Asfalto(xx * 16, yy * 16, Tile.Asfalto);
                         } else if (pixelAtual == 0xFF66FFED) {
@@ -158,15 +165,12 @@ public class World {
                     }
                 }
             }
-            // Todas as entidades menos o jogador sao os inimigos deste mapa.
-            Game.totalInimigos = Game.entities.size() - 1;
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public static void restartGame(String LEVEL) {
-        Game.entities.clear();
         Game.entities = new ArrayList<Entity>();
         Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
         Game.entities.add(Game.player);
