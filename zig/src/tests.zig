@@ -12,4 +12,5 @@ test {
     _ = @import("cff.zig");
     _ = @import("ttf.zig");
     _ = @import("bitmap_font.zig");
+    _ = @import("glyphs.zig");
 }
