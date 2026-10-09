@@ -104,7 +104,7 @@ pub const Player = struct {
             .right => 16,
             .left => 0,
         };
-        g.spritesheet.draw(.{ .x = self.sprite_x + self.index * 16, .y = row }, self.getX() - g.camera.x, self.getY() - g.camera.y);
+        g.spritesheet.draw(g.image, .{ .x = self.sprite_x + self.index * 16, .y = row }, self.getX() - g.camera.x, self.getY() - g.camera.y);
     }
 };
 
@@ -215,6 +215,6 @@ pub const Enemy = struct {
             .right => right_y,
             .left => left_y,
         };
-        g.spritesheet.draw(.{ .x = x + self.index * 16, .y = row }, self.getX() - g.camera.x, self.getY() - g.camera.y);
+        g.spritesheet.draw(g.image, .{ .x = x + self.index * 16, .y = row }, self.getX() - g.camera.x, self.getY() - g.camera.y);
     }
 };

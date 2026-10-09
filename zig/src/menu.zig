@@ -2,15 +2,22 @@
 
 const gfx = @import("gfx.zig");
 const Game = @import("game.zig").Game;
+const Tr = @import("game.zig").Tr;
 
-const txtmenu1 = "Novo jogo";
-const txtmenu2 = "Créditos";
-const txtmenu3 = "Sair";
-const txtcred1 = "Voltar";
-const loading_titles = [_][:0]const u8{ "Carregando", "Carregando.", "Carregando..", "Carregando..." };
+const txtmenu1: Tr = .{ "Novo jogo", "New game" };
+const txtmenu2: Tr = .{ "Créditos", "Credits" };
+const txtidioma: Tr = .{ "Idioma: Português", "Language: English" };
+const txtmenu3: Tr = .{ "Sair", "Quit" };
+const txtcred1: Tr = .{ "Voltar", "Back" };
+const loading_titles = [_]Tr{
+    .{ "Carregando", "Loading" },
+    .{ "Carregando.", "Loading." },
+    .{ "Carregando..", "Loading.." },
+    .{ "Carregando...", "Loading..." },
+};
 
 pub const Menu = struct {
-    /// 0 = "novo jogo", 1 = "creditos", 2 = "sair".
+    /// 0 = "novo jogo", 1 = "creditos", 2 = "idioma", 3 = "sair".
     option_atual: i32 = 0,
     w: bool = false,
     s: bool = false,
@@ -22,10 +29,10 @@ pub const Menu = struct {
     time: i32 = 0,
     volta: i32 = 0,
 
-    const option_max = 2;
+    const option_max = 3;
     const limite_volta = 3;
 
-    pub fn tick(self: *Menu, g: *Game) void {
+    pub fn tick(self: *Menu, g: *Game) !void {
         if (self.state_inicio) {
             if (self.w) {
                 g.sounds.play(.menu);
@@ -45,8 +52,11 @@ pub const Menu = struct {
                 g.sounds.play(.select);
                 self.enter = false;
 
-                if (self.option_atual == 2) {
+                if (self.option_atual == 3) {
                     g.quit = true;
+                } else if (self.option_atual == 2) {
+                    // Troca o idioma; o menu continua aberto, ja no outro idioma.
+                    try g.setLang(if (g.lang == .pt) .en else .pt);
                 } else if (self.option_atual == 1) {
                     self.state_loading = false;
                     self.state_inicio = false;
@@ -77,46 +87,49 @@ pub const Menu = struct {
         const cy = Game.heightfm / 2;
 
         if (self.state_inicio) {
-            gfx.drawScreen(g.screens.menu);
+            gfx.drawScreen(g.frame, g.screen(.menu));
 
-            const tam1 = g.text.width(txtmenu1, .s40);
-            g.text.draw(txtmenu1, .s40, cx - @divTrunc(tam1, 2), cy - 50, gfx.black);
-            const tam2 = g.text.width(txtmenu2, .s40);
-            g.text.draw(txtmenu2, .s40, cx - @divTrunc(tam2, 2), cy, gfx.black);
-            const tam3 = g.text.width(txtmenu3, .s40);
-            g.text.draw(txtmenu3, .s40, cx - @divTrunc(tam3, 2), cy + 50, gfx.black);
+            const tam1 = g.text.width(g.tr(txtmenu1), .s40);
+            g.text.draw(g.frame, g.tr(txtmenu1), .s40, cx - @divTrunc(tam1, 2), cy - 50, gfx.black);
+            const tam2 = g.text.width(g.tr(txtmenu2), .s40);
+            g.text.draw(g.frame, g.tr(txtmenu2), .s40, cx - @divTrunc(tam2, 2), cy, gfx.black);
+            const tam4 = g.text.width(g.tr(txtidioma), .s40);
+            g.text.draw(g.frame, g.tr(txtidioma), .s40, cx - @divTrunc(tam4, 2), cy + 50, gfx.black);
+            const tam3 = g.text.width(g.tr(txtmenu3), .s40);
+            g.text.draw(g.frame, g.tr(txtmenu3), .s40, cx - @divTrunc(tam3, 2), cy + 100, gfx.black);
 
             switch (self.option_atual) {
-                0 => g.text.draw(">", .s40, cx - @divTrunc(tam1, 2) - 50, cy - 50, gfx.black),
-                1 => g.text.draw(">", .s40, cx - @divTrunc(tam2, 2) - 50, cy, gfx.black),
-                2 => g.text.draw(">", .s40, cx - @divTrunc(tam3, 2) - 50, cy + 50, gfx.black),
+                0 => g.text.draw(g.frame, ">", .s40, cx - @divTrunc(tam1, 2) - 50, cy - 50, gfx.black),
+                1 => g.text.draw(g.frame, ">", .s40, cx - @divTrunc(tam2, 2) - 50, cy, gfx.black),
+                2 => g.text.draw(g.frame, ">", .s40, cx - @divTrunc(tam4, 2) - 50, cy + 50, gfx.black),
+                3 => g.text.draw(g.frame, ">", .s40, cx - @divTrunc(tam3, 2) - 50, cy + 100, gfx.black),
                 else => {},
             }
         } else if (self.state_creditos) {
-            gfx.drawScreen(g.screens.creditos);
+            gfx.drawScreen(g.frame, g.screen(.creditos));
 
-            const tam3 = g.text.width(txtcred1, .s40);
-            g.text.draw(txtcred1, .s40, cx - @divTrunc(tam3, 2), cy + 150, gfx.black);
-            g.text.draw(">", .s40, cx - @divTrunc(tam3, 2) - 50, cy + 150, gfx.black);
+            const tam3 = g.text.width(g.tr(txtcred1), .s40);
+            g.text.draw(g.frame, g.tr(txtcred1), .s40, cx - @divTrunc(tam3, 2), cy + 150, gfx.black);
+            g.text.draw(g.frame, ">", .s40, cx - @divTrunc(tam3, 2) - 50, cy + 150, gfx.black);
         } else if (self.state_loading) {
             self.time += 1;
-            gfx.fillScreen(gfx.blue);
+            gfx.fillScreen(g.frame, gfx.blue);
             if (self.volta < limite_volta) {
                 // Cada titulo fica 24 quadros; os quadros 25, 50, 75 e 100 ficam so azuis.
-                const title: ?[:0]const u8 = if (self.time < 25)
-                    loading_titles[0]
+                const title: ?[]const u8 = if (self.time < 25)
+                    g.tr(loading_titles[0])
                 else if (self.time > 25 and self.time < 50)
-                    loading_titles[1]
+                    g.tr(loading_titles[1])
                 else if (self.time > 50 and self.time < 75)
-                    loading_titles[2]
+                    g.tr(loading_titles[2])
                 else if (self.time > 75 and self.time < 100)
-                    loading_titles[3]
+                    g.tr(loading_titles[3])
                 else
                     null;
 
                 if (title) |t| {
                     const tam = g.text.width(t, .s50);
-                    g.text.draw(t, .s50, cx - @divTrunc(tam, 2), Game.heightfm - 50, gfx.black);
+                    g.text.draw(g.frame, t, .s50, cx - @divTrunc(tam, 2), Game.heightfm - 50, gfx.black);
                 } else if (self.time > 100) {
                     self.time = 0;
                     self.volta += 1;

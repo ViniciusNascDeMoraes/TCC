@@ -4,16 +4,13 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const raylib_dep = b.dependency("raylib", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
     // Imagens e sons ficam embutidos no executavel (ver res/assets.zig).
     const assets = b.createModule(.{
         .root_source_file = b.path("res/assets.zig"),
     });
 
+    // Sem dependencias: janela, audio, PNG e fontes sao feitos em Zig
+    // (no Linux o executavel e estatico; no Windows so usa DLLs do sistema).
     const exe = b.addExecutable(.{
         .name = "vacina",
         .root_module = b.createModule(.{
@@ -21,7 +18,6 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "raylib", .module = raylib_dep.module("raylib") },
                 .{ .name = "assets", .module = assets },
             },
         }),
@@ -39,16 +35,17 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Compila e executa o jogo");
     run_step.dependOn(&run_cmd.step);
 
-    // Testes da logica pura (sem raylib, rodam sem janela).
+    // Testes da logica pura (sem janela nem audio); usam os assets reais.
     const test_step = b.step("test", "Executa os testes de logica do jogo");
-    for ([_][]const u8{ "src/rules.zig", "src/camera.zig", "src/ttf.zig" }) |file| {
-        const tests = b.addTest(.{
-            .root_module = b.createModule(.{
-                .root_source_file = b.path(file),
-                .target = target,
-                .optimize = optimize,
-            }),
-        });
-        test_step.dependOn(&b.addRunArtifact(tests).step);
-    }
+    const tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "assets", .module = assets },
+            },
+        }),
+    });
+    test_step.dependOn(&b.addRunArtifact(tests).step);
 }

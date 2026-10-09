@@ -24,7 +24,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static final Color BLUE = new Color(9, 156, 147);
     private static final long serialVersionUID = 1L;
     public static JFrame frame;
-    public static BufferedImage Menu, Creditos, Morreu, ImagemFim, TelaVacina, Vacinando, Vacinando1, Vacinando2, Vacinando3;
+    // Idioma escolhido no menu inicial; indexa os textos e as telas abaixo.
+    public static final int PORTUGUES = 0, INGLES = 1;
+    public static int idioma = PORTUGUES;
+    // Telas com texto desenhado na imagem tem uma versao por idioma ([PORTUGUES], [INGLES]).
+    public static BufferedImage[] Menu, Creditos, ImagemFim, TelaVacina, Vacinando, Vacinando1, Vacinando2, Vacinando3;
+    public static BufferedImage Morreu;
 
     public static List<Entity> entities;
 
@@ -37,13 +42,21 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static int widthfm = 0, heightfm = 0;
     public static Spritesheet spritesheet;
     public static int tam1, tam2;
-    public static String txtmenu1 = "Retornar ao jogo", txtmenu2 = "Sair do jogo", txtgo1 = "Reiniciar a fase",
-            txtgo2 = "Sair do jogo";
-    public static String txt_missao_texto = "Chegue no hospital", txt_missao_texto1 = "para se vacinar!",
-            txt_missao_texto3 = "Dica: Desvie das bactérias.", txt_missao_texto4 = "Vá para a área amarela",
-            txt_missao_texto5 = "para se vacinar", txt_missao_texto6 = "Utilize seu escudo para ",
-            txt_missao_texto7 = "eliminar todos os vírus e bactérias", txt_missao_texto8 = "Inimigos eliminados: ",
-            txt_missao_texto9 = "Todos os inimigos foram eliminados,", txt_missao_texto10 = "volte para casa!";
+    // Cada texto em { portugues, ingles }, usado como texto[idioma].
+    public static String[] txtmenu1 = { "Retornar ao jogo", "Resume game" },
+            txtmenu2 = { "Sair do jogo", "Quit game" },
+            txtgo1 = { "Reiniciar a fase", "Restart level" },
+            txtgo2 = { "Sair do jogo", "Quit game" };
+    public static String[] txt_missao_texto = { "Chegue no hospital", "Get to the hospital" },
+            txt_missao_texto1 = { "para se vacinar!", "to get vaccinated!" },
+            txt_missao_texto3 = { "Dica: Desvie das bactérias.", "Tip: Dodge the bacteria." },
+            txt_missao_texto4 = { "Vá para a área amarela", "Go to the yellow area" },
+            txt_missao_texto5 = { "para se vacinar", "to get vaccinated" },
+            txt_missao_texto6 = { "Utilize seu escudo para ", "Use your shield to " },
+            txt_missao_texto7 = { "eliminar todos os vírus e bactérias", "eliminate all viruses and bacteria" },
+            txt_missao_texto8 = { "Inimigos eliminados: ", "Enemies eliminated: " },
+            txt_missao_texto9 = { "Todos os inimigos foram eliminados,", "All enemies have been eliminated," },
+            txt_missao_texto10 = { "volte para casa!", "go back home!" };
     public static boolean pause = false, dialogo = false, vacinado = false, gameOver = false;
     public static int LEVEL = 1;
     // Menus de pausa e de game over: 0 = primeira opcao, 1 = segunda.
@@ -60,69 +73,15 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
     public Game() {
 
-        URL Caminho = getClass().getResource("/TelaMenu.png");
-        try {
-            Menu = ImageIO.read(Caminho);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        URL Caminho2 = getClass().getResource("/TelaCreditos.png");
-        try {
-            Creditos = ImageIO.read(Caminho2);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        URL Caminho3 = getClass().getResource("/GameOver.png");
-        try {
-            Morreu = ImageIO.read(Caminho3);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        URL Caminho4 = getClass().getResource("/TelaFim.png");
-        try {
-            ImagemFim = ImageIO.read(Caminho4);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        URL Caminho5 = getClass().getResource("/TelaVacina.png");
-        try {
-            TelaVacina = ImageIO.read(Caminho5);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        URL Caminho6 = getClass().getResource("/Vacinando.png");
-        try {
-            Vacinando = ImageIO.read(Caminho6);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        URL Caminho7 = getClass().getResource("/Vacinando1.png");
-        try {
-            Vacinando1 = ImageIO.read(Caminho7);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        URL Caminho8 = getClass().getResource("/Vacinando2.png");
-        try {
-            Vacinando2 = ImageIO.read(Caminho8);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        URL Caminho9 = getClass().getResource("/Vacinando3.png");
-        try {
-            Vacinando3 = ImageIO.read(Caminho9);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Menu = carregarTela("TelaMenu");
+        Creditos = carregarTela("TelaCreditos");
+        Morreu = carregarImagem("/GameOver.png");
+        ImagemFim = carregarTela("TelaFim");
+        TelaVacina = carregarTela("TelaVacina");
+        Vacinando = carregarTela("Vacinando");
+        Vacinando1 = carregarTela("Vacinando1");
+        Vacinando2 = carregarTela("Vacinando2");
+        Vacinando3 = carregarTela("Vacinando3");
 
         addKeyListener(this);
         // Sem foco o AWT nao avisa quando as teclas sao soltas: considera todas soltas.
@@ -153,6 +112,23 @@ public class Game extends Canvas implements Runnable, KeyListener {
         widthfm = width * scale;
         heightfm = height * scale;
 
+    }
+
+    private BufferedImage carregarImagem(String caminho) {
+        URL url = getClass().getResource(caminho);
+        try {
+            return ImageIO.read(url);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Tela com texto na imagem: a versao em portugues (nome.png) e a em ingles (nome_en.png).
+     */
+    private BufferedImage[] carregarTela(String nome) {
+        return new BufferedImage[] { carregarImagem("/" + nome + ".png"), carregarImagem("/" + nome + "_en.png") };
     }
 
     public static void main(String args[]) {
@@ -377,14 +353,14 @@ public class Game extends Canvas implements Runnable, KeyListener {
             g.setColor(BLUE);
             g.fillRect(0, 0, Game.widthfm, Game.heightfm);
 
-            g.drawImage(Game.ImagemFim, 0, 0, Game.widthfm, Game.heightfm, null);
+            g.drawImage(Game.ImagemFim[idioma], 0, 0, Game.widthfm, Game.heightfm, null);
         } else if (pause == true && gameOver == false) {
             g.setColor(Color.white);
             g.setFont(new Font("Bookman Old Style", Font.BOLD, 30));
-            tam1 = g.getFontMetrics().stringWidth(txtmenu1);
-            g.drawString(txtmenu1, (Game.widthfm / 2) - (tam1 / 2), (Game.heightfm / 2) - 50);
-            tam2 = g.getFontMetrics().stringWidth(txtmenu2);
-            g.drawString(txtmenu2, (Game.widthfm / 2) - (tam2 / 2), (Game.heightfm / 2));
+            tam1 = g.getFontMetrics().stringWidth(txtmenu1[idioma]);
+            g.drawString(txtmenu1[idioma], (Game.widthfm / 2) - (tam1 / 2), (Game.heightfm / 2) - 50);
+            tam2 = g.getFontMetrics().stringWidth(txtmenu2[idioma]);
+            g.drawString(txtmenu2[idioma], (Game.widthfm / 2) - (tam2 / 2), (Game.heightfm / 2));
 
             if (optionAtual == 0) {
                 g.drawString(">", ((Game.widthfm / 2) - (tam1 / 2)) - 40, (Game.heightfm / 2) - 50);
@@ -398,10 +374,10 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
             g.setColor(Color.black);
             g.setFont(new Font("Bookman Old Style", Font.BOLD, 30));
-            tam1 = g.getFontMetrics().stringWidth(txtgo1);
-            g.drawString(txtgo1, (Game.widthfm / 2) - (tam1 / 2), (Game.heightfm / 2) - 50);
-            tam2 = g.getFontMetrics().stringWidth(txtgo2);
-            g.drawString(txtgo2, (Game.widthfm / 2) - (tam2 / 2), (Game.heightfm / 2));
+            tam1 = g.getFontMetrics().stringWidth(txtgo1[idioma]);
+            g.drawString(txtgo1[idioma], (Game.widthfm / 2) - (tam1 / 2), (Game.heightfm / 2) - 50);
+            tam2 = g.getFontMetrics().stringWidth(txtgo2[idioma]);
+            g.drawString(txtgo2[idioma], (Game.widthfm / 2) - (tam2 / 2), (Game.heightfm / 2));
 
             if (optionAtual == 0) {
                 g.drawString(">", ((Game.widthfm / 2) - (tam1 / 2)) - 40, (Game.heightfm / 2) - 50);
@@ -419,7 +395,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 if (time < 40) {
                     g.setColor(Color.black);
 
-                    g.drawImage(Game.Vacinando, 0, 0, Game.widthfm, Game.heightfm, null);
+                    g.drawImage(Game.Vacinando[idioma], 0, 0, Game.widthfm, Game.heightfm, null);
                 } else if (time == 40) {
                     g.clearRect(0, 0, Game.widthfm, Game.heightfm);
                     g.setColor(BLUE);
@@ -427,7 +403,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 } else if (time > 40 && time < 80) {
                     g.setColor(Color.black);
 
-                    g.drawImage(Game.Vacinando1, 0, 0, Game.widthfm, Game.heightfm, null);
+                    g.drawImage(Game.Vacinando1[idioma], 0, 0, Game.widthfm, Game.heightfm, null);
                 } else if (time == 80) {
                     g.clearRect(0, 0, Game.widthfm, Game.heightfm);
                     g.setColor(BLUE);
@@ -435,7 +411,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 } else if (time > 80 && time < 120) {
                     g.setColor(Color.black);
 
-                    g.drawImage(Game.Vacinando2, 0, 0, Game.widthfm, Game.heightfm, null);
+                    g.drawImage(Game.Vacinando2[idioma], 0, 0, Game.widthfm, Game.heightfm, null);
                 } else if (time == 120) {
                     g.clearRect(0, 0, Game.widthfm, Game.heightfm);
                     g.setColor(BLUE);
@@ -443,7 +419,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 } else if (time > 120 && time < 160) {
                     g.setColor(Color.black);
 
-                    g.drawImage(Game.Vacinando3, 0, 0, Game.widthfm, Game.heightfm, null);
+                    g.drawImage(Game.Vacinando3[idioma], 0, 0, Game.widthfm, Game.heightfm, null);
 
                 } else if (time > 160) {
                     time = 0;
@@ -451,7 +427,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 }
             } else if (volta >= 3 && volta < 5) {
                 g.setColor(BLUE);
-                g.drawImage(Game.TelaVacina, 0, 0, Game.widthfm, Game.heightfm, null);
+                g.drawImage(Game.TelaVacina[idioma], 0, 0, Game.widthfm, Game.heightfm, null);
 
                 if (time > 100) {
                     volta = volta + 1;
@@ -467,29 +443,29 @@ public class Game extends Canvas implements Runnable, KeyListener {
         if (LEVEL == 1 && gameOver == false && menu.stateJogo == true && player.getY() > 160) {
             g.setColor(Color.WHITE);
             g.setFont(new Font("Bookman Old Style", Font.BOLD, 23));
-            g.drawString(txt_missao_texto, 15, 30);
-            g.drawString(txt_missao_texto1, 15, 60);
-            g.drawString(txt_missao_texto3, 15, 100);
+            g.drawString(txt_missao_texto[idioma], 15, 30);
+            g.drawString(txt_missao_texto1[idioma], 15, 60);
+            g.drawString(txt_missao_texto3[idioma], 15, 100);
         } else if (LEVEL == 2 && gameOver == false && menu.stateJogo == true && vacinado == false && dialogo == false) {
 
             g.setColor(Color.BLACK);
             g.setFont(new Font("Bookman Old Style", Font.BOLD, 20));
-            g.drawString(txt_missao_texto4, 15, 30);
-            g.drawString(txt_missao_texto5, 15, 60);
+            g.drawString(txt_missao_texto4[idioma], 15, 30);
+            g.drawString(txt_missao_texto5[idioma], 15, 60);
         } else if (LEVEL == 3 && gameOver == false && menu.stateJogo == true && player.getY() > 160) {
             if (Game.contador < totalInimigos) {
                 g.setColor(Color.WHITE);
                 g.setFont(new Font("Bookman Old Style", Font.BOLD, 23));
-                g.drawString(txt_missao_texto6, 15, 30);
-                g.drawString(txt_missao_texto7, 15, 60);
-                g.drawString(txt_missao_texto8, 15, 100);
+                g.drawString(txt_missao_texto6[idioma], 15, 30);
+                g.drawString(txt_missao_texto7[idioma], 15, 60);
+                g.drawString(txt_missao_texto8[idioma], 15, 100);
                 g.drawString("" + contador, 275, 101);
             }
             if (Game.contador >= totalInimigos && fim == false) {
                 g.setColor(Color.WHITE);
                 g.setFont(new Font("Bookman Old Style", Font.BOLD, 20));
-                g.drawString(txt_missao_texto9, 15, 30);
-                g.drawString(txt_missao_texto10, 15, 60);
+                g.drawString(txt_missao_texto9[idioma], 15, 30);
+                g.drawString(txt_missao_texto10[idioma], 15, 60);
             }
         }
 

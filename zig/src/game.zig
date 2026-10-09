@@ -5,12 +5,15 @@
 //! `game_over` corresponde ao `Game.gameOver` do Java.
 
 const std = @import("std");
-const rl = @import("raylib");
 const assets = @import("assets");
 const gfx = @import("gfx.zig");
+const platform = @import("platform.zig");
 const Camera = @import("camera.zig").Camera;
 const Enemy = @import("entities.zig").Enemy;
+const Key = platform.Key;
+const KeyEvent = platform.KeyEvent;
 const Menu = @import("menu.zig").Menu;
+const Mixer = @import("mixer.zig").Mixer;
 const Player = @import("entities.zig").Player;
 const Sounds = @import("sound.zig").Sounds;
 const Spritesheet = @import("spritesheet.zig").Spritesheet;
@@ -18,70 +21,102 @@ const Text = @import("text.zig").Text;
 const world_mod = @import("world.zig");
 const World = world_mod.World;
 
-const txtmenu1 = "Retornar ao jogo";
-const txtmenu2 = "Sair do jogo";
-const txtgo1 = "Reiniciar a fase";
-const txtgo2 = "Sair do jogo";
-const txt_missao_texto = "Chegue no hospital";
-const txt_missao_texto1 = "para se vacinar!";
-const txt_missao_texto3 = "Dica: Desvie das bactérias.";
-const txt_missao_texto4 = "Vá para a área amarela";
-const txt_missao_texto5 = "para se vacinar";
-const txt_missao_texto6 = "Utilize seu escudo para ";
-const txt_missao_texto7 = "eliminar todos os vírus e bactérias";
-const txt_missao_texto8 = "Inimigos eliminados: ";
-const txt_missao_texto9 = "Todos os inimigos foram eliminados,";
-const txt_missao_texto10 = "volte para casa!";
+/// Idioma escolhido no menu inicial (o `Game.idioma` do Java).
+pub const Lang = enum { pt, en };
 
-/// Imagens de tela inteira (960x640).
+/// Um texto em portugues e em ingles (na ordem de `Lang`), como os pares
+/// `{ ..., ... }` do Java; `Game.tr` escolhe o do idioma atual.
+pub const Tr = [2][]const u8;
+
+const txtmenu1: Tr = .{ "Retornar ao jogo", "Resume game" };
+const txtmenu2: Tr = .{ "Sair do jogo", "Quit game" };
+const txtgo1: Tr = .{ "Reiniciar a fase", "Restart level" };
+const txtgo2: Tr = .{ "Sair do jogo", "Quit game" };
+const txt_missao_texto: Tr = .{ "Chegue no hospital", "Get to the hospital" };
+const txt_missao_texto1: Tr = .{ "para se vacinar!", "to get vaccinated!" };
+const txt_missao_texto3: Tr = .{ "Dica: Desvie das bactérias.", "Tip: Dodge the bacteria." };
+const txt_missao_texto4: Tr = .{ "Vá para a área amarela", "Go to the yellow area" };
+const txt_missao_texto5: Tr = .{ "para se vacinar", "to get vaccinated" };
+const txt_missao_texto6: Tr = .{ "Utilize seu escudo para ", "Use your shield to " };
+const txt_missao_texto7: Tr = .{ "eliminar todos os vírus e bactérias", "eliminate all viruses and bacteria" };
+const txt_missao_texto8: Tr = .{ "Inimigos eliminados: ", "Enemies eliminated: " };
+const txt_missao_texto9: Tr = .{ "Todos os inimigos foram eliminados,", "All enemies have been eliminated," };
+const txt_missao_texto10: Tr = .{ "volte para casa!", "go back home!" };
+
+/// Telas de tela inteira (960x640) com texto desenhado na imagem: existem
+/// em portugues e em ingles (`res/*_en.png`).
+pub const Screen = enum { menu, creditos, imagem_fim, tela_vacina, vacinando, vacinando1, vacinando2, vacinando3 };
+
+const ScreenSet = std.EnumArray(Screen, gfx.Image);
+
+/// Os PNGs de cada tela em cada idioma.
+const screen_files = std.EnumArray(Lang, std.EnumArray(Screen, []const u8)).init(.{
+    .pt = .init(.{
+        .menu = assets.tela_menu,
+        .creditos = assets.tela_creditos,
+        .imagem_fim = assets.tela_fim,
+        .tela_vacina = assets.tela_vacina,
+        .vacinando = assets.vacinando,
+        .vacinando1 = assets.vacinando1,
+        .vacinando2 = assets.vacinando2,
+        .vacinando3 = assets.vacinando3,
+    }),
+    .en = .init(.{
+        .menu = assets.tela_menu_en,
+        .creditos = assets.tela_creditos_en,
+        .imagem_fim = assets.tela_fim_en,
+        .tela_vacina = assets.tela_vacina_en,
+        .vacinando = assets.vacinando_en,
+        .vacinando1 = assets.vacinando1_en,
+        .vacinando2 = assets.vacinando2_en,
+        .vacinando3 = assets.vacinando3_en,
+    }),
+});
+
+/// Imagens de tela inteira. As telas de um idioma so sao decodificadas
+/// quando ele e usado (o jogo comeca em portugues).
 pub const Screens = struct {
-    menu: rl.Texture2D,
-    creditos: rl.Texture2D,
-    morreu: rl.Texture2D,
-    imagem_fim: rl.Texture2D,
-    tela_vacina: rl.Texture2D,
-    vacinando: [4]rl.Texture2D,
+    morreu: gfx.Image,
+    sets: std.EnumArray(Lang, ?ScreenSet),
 
-    fn load() Screens {
-        return .{
-            .menu = gfx.loadTexture(assets.tela_menu),
-            .creditos = gfx.loadTexture(assets.tela_creditos),
-            .morreu = gfx.loadTexture(assets.game_over),
-            .imagem_fim = gfx.loadTexture(assets.tela_fim),
-            .tela_vacina = gfx.loadTexture(assets.tela_vacina),
-            .vacinando = .{
-                gfx.loadTexture(assets.vacinando),
-                gfx.loadTexture(assets.vacinando1),
-                gfx.loadTexture(assets.vacinando2),
-                gfx.loadTexture(assets.vacinando3),
-            },
-        };
+    fn load(gpa: std.mem.Allocator) !Screens {
+        const morreu = try gfx.loadImage(gpa, assets.game_over);
+        errdefer morreu.deinit(gpa);
+        var self: Screens = .{ .morreu = morreu, .sets = .initFill(null) };
+        try self.loadLang(gpa, .pt);
+        return self;
     }
 
-    fn unload(self: Screens) void {
-        for ([_]rl.Texture2D{ self.menu, self.creditos, self.morreu, self.imagem_fim, self.tela_vacina } ++ self.vacinando) |texture| {
-            rl.UnloadTexture(texture);
+    fn loadLang(self: *Screens, gpa: std.mem.Allocator, lang: Lang) !void {
+        if (self.sets.get(lang) != null) return;
+        const files = screen_files.get(lang);
+        const screens = std.enums.values(Screen);
+        var set: ScreenSet = .initUndefined();
+        for (screens, 0..) |screen, i| {
+            errdefer for (screens[0..i]) |done| set.get(done).deinit(gpa);
+            set.set(screen, try gfx.loadImage(gpa, files.get(screen)));
+        }
+        self.sets.set(lang, set);
+    }
+
+    fn get(self: *const Screens, lang: Lang, screen: Screen) gfx.Image {
+        return self.sets.get(lang).?.get(screen);
+    }
+
+    fn unload(self: Screens, gpa: std.mem.Allocator) void {
+        self.morreu.deinit(gpa);
+        for (self.sets.values) |maybe_set| {
+            const set = maybe_set orelse continue;
+            for (set.values) |image| image.deinit(gpa);
         }
     }
 };
 
-/// Teclas que o jogo trata. O Enter do teclado numerico conta como Enter,
-/// como o `KeyEvent.VK_ENTER` do Java.
-const keys = [_]c_int{ rl.KEY_W, rl.KEY_A, rl.KEY_S, rl.KEY_D, rl.KEY_ENTER, rl.KEY_KP_ENTER, rl.KEY_ESCAPE };
-
-fn keyIndex(key: c_int) ?usize {
-    return std.mem.indexOfScalar(c_int, &keys, key);
-}
-
-fn normalizeKey(key: c_int) c_int {
-    return if (key == rl.KEY_KP_ENTER) rl.KEY_ENTER else key;
-}
-
 /// Esc e Enter so contam quando apertados de novo: segurar a tecla nao
 /// repete a acao (no Java, as flags `escPressionado`/`enterPressionado`).
-fn repeatsWhenHeld(key: c_int) bool {
+fn repeatsWhenHeld(key: Key) bool {
     return switch (key) {
-        rl.KEY_ESCAPE, rl.KEY_ENTER, rl.KEY_KP_ENTER => false,
+        .escape, .enter => false,
         else => true,
     };
 }
@@ -99,10 +134,14 @@ pub const Game = struct {
     spritesheet: Spritesheet,
     screens: Screens,
     /// O `BufferedImage image` 240x160 onde o mundo e desenhado.
-    image: rl.RenderTexture2D,
+    image: gfx.Canvas,
+    /// O quadro inteiro (960x640) que vai para a janela.
+    frame: gfx.Canvas,
     text: Text,
     sounds: Sounds,
 
+    /// Fica como o jogador escolheu ate o jogo fechar (`voltarAoMenu` nao muda).
+    lang: Lang = .pt,
     level: i32 = 1,
     contador: i32 = 0,
     /// Inimigos criados no mapa do nivel atual; no nivel 3 e preciso eliminar todos.
@@ -133,29 +172,58 @@ pub const Game = struct {
 
     const option_max = 1;
 
-    /// Requer a janela e o dispositivo de audio ja inicializados.
-    pub fn init(self: *Game, gpa: std.mem.Allocator) !void {
+    /// `mixer` recebe os pedidos de som; `io` e `env` acham as fontes do sistema.
+    pub fn init(self: *Game, gpa: std.mem.Allocator, io: std.Io, env: *const std.process.Environ.Map, mixer: *Mixer) !void {
+        const spritesheet: Spritesheet = try .load(gpa);
+        errdefer spritesheet.unload(gpa);
+        const screens: Screens = try .load(gpa);
+        errdefer screens.unload(gpa);
+        const image: gfx.Canvas = try .init(gpa, width, height);
+        errdefer image.deinit(gpa);
+        const frame: gfx.Canvas = try .init(gpa, widthfm, heightfm);
+        errdefer frame.deinit(gpa);
+        const text: Text = try .load(gpa, io, env);
+        errdefer text.unload(gpa);
+
         self.* = .{
             .gpa = gpa,
-            .spritesheet = .load(),
-            .screens = .load(),
-            .image = rl.LoadRenderTexture(width, height),
-            .text = .load(),
-            .sounds = .load(),
+            .spritesheet = spritesheet,
+            .screens = screens,
+            .image = image,
+            .frame = frame,
+            .text = text,
+            .sounds = .{ .mixer = mixer },
             .player = .init(1),
             .world = undefined,
         };
+        errdefer self.enemies.deinit(gpa);
         self.world = try World.load(self, assets.level1);
     }
 
     pub fn deinit(self: *Game) void {
         self.world.deinit(self);
         self.enemies.deinit(self.gpa);
-        self.sounds.unload();
-        self.text.unload();
-        rl.UnloadRenderTexture(self.image);
-        self.screens.unload();
-        self.spritesheet.unload();
+        self.text.unload(self.gpa);
+        self.frame.deinit(self.gpa);
+        self.image.deinit(self.gpa);
+        self.screens.unload(self.gpa);
+        self.spritesheet.unload(self.gpa);
+    }
+
+    /// O texto no idioma atual.
+    pub fn tr(self: *const Game, pair: Tr) []const u8 {
+        return pair[@intFromEnum(self.lang)];
+    }
+
+    /// Uma das telas com texto, no idioma atual.
+    pub fn screen(self: *const Game, which: Screen) gfx.Image {
+        return self.screens.get(self.lang, which);
+    }
+
+    /// Troca o idioma, decodificando as telas dele na primeira vez.
+    pub fn setLang(self: *Game, lang: Lang) !void {
+        try self.screens.loadLang(self.gpa, lang);
+        self.lang = lang;
     }
 
     fn normal(self: Game) bool {
@@ -188,7 +256,7 @@ pub const Game = struct {
 
     pub fn tick(self: *Game) !void {
         if (self.menu.state_inicio or self.menu.state_creditos and !self.pause and self.normal()) {
-            self.menu.tick(self);
+            try self.menu.tick(self);
         } else if (self.menu.state_jogo and !self.pause and self.normal() and !self.dialogo and !self.fim) {
             self.player.tick(self);
             // Um inimigo eliminado sai da lista sem fazer o seguinte perder o tick.
@@ -273,25 +341,18 @@ pub const Game = struct {
         }
     }
 
+    /// Desenha o quadro em `frame`.
     pub fn render(self: *Game) void {
         // Mundo e entidades na imagem 240x160.
-        rl.BeginTextureMode(self.image);
-        rl.ClearBackground(gfx.black);
+        self.image.clear(gfx.black);
         if (self.menu.state_jogo and self.normal()) {
             self.world.render(self);
             self.player.render(self);
             for (self.enemies.items) |enemy| enemy.render(self);
         }
-        rl.EndTextureMode();
 
-        rl.BeginDrawing();
-        defer rl.EndDrawing();
-        rl.ClearBackground(gfx.black);
-
-        // A textura de um RenderTexture fica de cabeca para baixo: altura negativa.
-        const source: rl.Rectangle = .{ .x = 0, .y = 0, .width = width, .height = -height };
-        const dest: rl.Rectangle = .{ .x = 0, .y = 0, .width = widthfm, .height = heightfm };
-        rl.DrawTexturePro(self.image.texture, source, dest, .{ .x = 0, .y = 0 }, 0, gfx.white);
+        // A imagem ampliada cobre o quadro inteiro.
+        self.frame.drawScaled(self.image, scale);
 
         self.renderScreens();
         self.renderMission();
@@ -304,34 +365,34 @@ pub const Game = struct {
         {
             self.menu.render(self);
         } else if (self.fim) {
-            gfx.fillScreen(gfx.blue);
-            gfx.drawScreen(self.screens.imagem_fim);
+            gfx.fillScreen(self.frame, gfx.blue);
+            gfx.drawScreen(self.frame, self.screen(.imagem_fim));
         } else if (self.pause and self.normal()) {
-            self.renderOptions(txtmenu1, txtmenu2, gfx.white);
+            self.renderOptions(self.tr(txtmenu1), self.tr(txtmenu2), gfx.white);
         } else if (self.game_over) {
-            gfx.drawScreen(self.screens.morreu);
-            self.renderOptions(txtgo1, txtgo2, gfx.black);
+            gfx.drawScreen(self.frame, self.screens.morreu);
+            self.renderOptions(self.tr(txtgo1), self.tr(txtgo2), gfx.black);
         } else if (self.player.getY() < 20 and self.player.getX() > 93 and self.player.getX() < 98 and self.level == 2) {
             self.dialogo = true;
-            gfx.fillScreen(gfx.blue);
+            gfx.fillScreen(self.frame, gfx.blue);
 
             self.time += 1;
             if (self.volta < 3) {
                 // Cada imagem fica 39 quadros; os quadros 40, 80, 120 e 160 ficam so azuis.
                 if (self.time < 40) {
-                    gfx.drawScreen(self.screens.vacinando[0]);
+                    gfx.drawScreen(self.frame, self.screen(.vacinando));
                 } else if (self.time > 40 and self.time < 80) {
-                    gfx.drawScreen(self.screens.vacinando[1]);
+                    gfx.drawScreen(self.frame, self.screen(.vacinando1));
                 } else if (self.time > 80 and self.time < 120) {
-                    gfx.drawScreen(self.screens.vacinando[2]);
+                    gfx.drawScreen(self.frame, self.screen(.vacinando2));
                 } else if (self.time > 120 and self.time < 160) {
-                    gfx.drawScreen(self.screens.vacinando[3]);
+                    gfx.drawScreen(self.frame, self.screen(.vacinando3));
                 } else if (self.time > 160) {
                     self.time = 0;
                     self.volta += 1;
                 }
             } else if (self.volta >= 3 and self.volta < 5) {
-                gfx.drawScreen(self.screens.tela_vacina);
+                gfx.drawScreen(self.frame, self.screen(.tela_vacina));
 
                 if (self.time > 100) {
                     self.volta += 1;
@@ -345,96 +406,86 @@ pub const Game = struct {
     }
 
     /// As duas opcoes centralizadas dos menus de pausa e de game over.
-    fn renderOptions(self: *Game, op1: [:0]const u8, op2: [:0]const u8, color: rl.Color) void {
+    fn renderOptions(self: *Game, op1: []const u8, op2: []const u8, color: gfx.Color) void {
         const cx = widthfm / 2;
         const cy = heightfm / 2;
 
         const tam1 = self.text.width(op1, .s30);
-        self.text.draw(op1, .s30, cx - @divTrunc(tam1, 2), cy - 50, color);
+        self.text.draw(self.frame, op1, .s30, cx - @divTrunc(tam1, 2), cy - 50, color);
         const tam2 = self.text.width(op2, .s30);
-        self.text.draw(op2, .s30, cx - @divTrunc(tam2, 2), cy, color);
+        self.text.draw(self.frame, op2, .s30, cx - @divTrunc(tam2, 2), cy, color);
 
         if (self.option_atual == 0) {
-            self.text.draw(">", .s30, cx - @divTrunc(tam1, 2) - 40, cy - 50, color);
+            self.text.draw(self.frame, ">", .s30, cx - @divTrunc(tam1, 2) - 40, cy - 50, color);
         } else if (self.option_atual == 1) {
-            self.text.draw(">", .s30, cx - @divTrunc(tam2, 2) - 40, cy, color);
+            self.text.draw(self.frame, ">", .s30, cx - @divTrunc(tam2, 2) - 40, cy, color);
         }
     }
 
     /// Textos de missao no canto superior esquerdo (desenhados por cima de tudo).
     fn renderMission(self: *Game) void {
         if (self.level == 1 and self.normal() and self.menu.state_jogo and self.player.getY() > 160) {
-            self.text.draw(txt_missao_texto, .s23, 15, 30, gfx.white);
-            self.text.draw(txt_missao_texto1, .s23, 15, 60, gfx.white);
-            self.text.draw(txt_missao_texto3, .s23, 15, 100, gfx.white);
+            self.text.draw(self.frame, self.tr(txt_missao_texto), .s23, 15, 30, gfx.white);
+            self.text.draw(self.frame, self.tr(txt_missao_texto1), .s23, 15, 60, gfx.white);
+            self.text.draw(self.frame, self.tr(txt_missao_texto3), .s23, 15, 100, gfx.white);
         } else if (self.level == 2 and self.normal() and self.menu.state_jogo and !self.vacinado and !self.dialogo) {
-            self.text.draw(txt_missao_texto4, .s20, 15, 30, gfx.black);
-            self.text.draw(txt_missao_texto5, .s20, 15, 60, gfx.black);
+            self.text.draw(self.frame, self.tr(txt_missao_texto4), .s20, 15, 30, gfx.black);
+            self.text.draw(self.frame, self.tr(txt_missao_texto5), .s20, 15, 60, gfx.black);
         } else if (self.level == 3 and self.normal() and self.menu.state_jogo and self.player.getY() > 160) {
             if (self.contador < self.total_inimigos) {
-                self.text.draw(txt_missao_texto6, .s23, 15, 30, gfx.white);
-                self.text.draw(txt_missao_texto7, .s23, 15, 60, gfx.white);
-                self.text.draw(txt_missao_texto8, .s23, 15, 100, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto6), .s23, 15, 30, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto7), .s23, 15, 60, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto8), .s23, 15, 100, gfx.white);
                 var buffer: [16]u8 = undefined;
-                const contador = std.fmt.bufPrintZ(&buffer, "{d}", .{self.contador}) catch unreachable;
-                self.text.draw(contador, .s23, 275, 101, gfx.white);
+                const contador = std.fmt.bufPrint(&buffer, "{d}", .{self.contador}) catch unreachable;
+                self.text.draw(self.frame, contador, .s23, 275, 101, gfx.white);
             }
             if (self.contador >= self.total_inimigos and !self.fim) {
-                self.text.draw(txt_missao_texto9, .s20, 15, 30, gfx.white);
-                self.text.draw(txt_missao_texto10, .s20, 15, 60, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto9), .s20, 15, 30, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto10), .s20, 15, 60, gfx.white);
             }
         }
     }
 
-    /// Le o teclado do quadro e repassa para `keyPressed`/`keyReleased`,
-    /// como os eventos do `KeyListener` do Java (incluindo a repeticao
-    /// automatica de W/A/S/D segurado). A fila do `GetKeyPressed` so tem
-    /// apertos novos, entao um Esc solto e apertado no mesmo quadro conta.
-    pub fn handleInput(self: *Game) void {
-        var pressed_now: [keys.len]bool = @splat(false);
-        while (true) {
-            const key = rl.GetKeyPressed();
-            if (key == 0) break;
-            const i = keyIndex(key) orelse continue;
-            pressed_now[i] = true;
-            self.keyPressed(normalizeKey(key));
-        }
-
-        for (keys, pressed_now) |key, pressed| {
-            if (rl.IsKeyPressedRepeat(key) and repeatsWhenHeld(key)) self.keyPressed(normalizeKey(key));
-            // Tecla apertada e solta no mesmo quadro tambem gera a soltura.
-            if (rl.IsKeyReleased(key) or (pressed and !rl.IsKeyDown(key))) self.keyReleased(normalizeKey(key));
-        }
+    /// Repassa os eventos de teclado do quadro, na ordem em que aconteceram,
+    /// para `keyPressed`/`keyReleased`, como o `KeyListener` do Java
+    /// (incluindo a repeticao automatica de W/A/S/D segurado).
+    pub fn handleInput(self: *Game, events: []const KeyEvent) void {
+        for (events) |event| switch (event.action) {
+            .press => self.keyPressed(event.key),
+            .repeat => if (repeatsWhenHeld(event.key)) self.keyPressed(event.key),
+            .release => self.keyReleased(event.key),
+        };
     }
 
-    pub fn keyPressed(self: *Game, key: c_int) void {
+    pub fn keyPressed(self: *Game, key: Key) void {
         if (self.menu.state_inicio and self.normal()) {
-            if (key == rl.KEY_W) {
+            if (key == .w) {
                 self.menu.w = true;
-            } else if (key == rl.KEY_S) {
+            } else if (key == .s) {
                 self.menu.s = true;
             }
-            if (key == rl.KEY_ENTER) {
+            if (key == .enter) {
                 self.menu.enter = true;
             }
         } else if (self.menu.state_creditos and self.normal()) {
-            if (key == rl.KEY_ENTER or key == rl.KEY_ESCAPE) {
+            if (key == .enter or key == .escape) {
                 self.menu.enter = true;
             }
         } else if (self.menu.state_jogo and self.normal() and !self.fim) {
-            if (key == rl.KEY_W) {
+            if (key == .w) {
                 self.player.up = true;
-            } else if (key == rl.KEY_S) {
+            } else if (key == .s) {
                 self.player.down = true;
             }
 
-            if (key == rl.KEY_D) {
+            if (key == .d) {
                 self.player.right = true;
-            } else if (key == rl.KEY_A) {
+            } else if (key == .a) {
                 self.player.left = true;
             }
 
-            if (key == rl.KEY_ESCAPE) {
+            if (key == .escape) {
                 if (self.pause) {
                     // Descarta W/S/Enter apertados no menu de pausa e ainda nao processados.
                     self.pause = false;
@@ -447,41 +498,41 @@ pub const Game = struct {
                 }
             }
 
-            if (key == rl.KEY_W and self.pause) {
+            if (key == .w and self.pause) {
                 self.w = true;
-            } else if (key == rl.KEY_S and self.pause) {
+            } else if (key == .s and self.pause) {
                 self.s = true;
             }
-            if (key == rl.KEY_ENTER and self.pause) {
+            if (key == .enter and self.pause) {
                 self.enter = true;
             }
         } else if (self.menu.state_jogo and self.fim) {
-            if (key == rl.KEY_ENTER or key == rl.KEY_ESCAPE) {
+            if (key == .enter or key == .escape) {
                 self.enter = true;
             }
         } else if (self.game_over) {
-            if (key == rl.KEY_W) {
+            if (key == .w) {
                 self.w = true;
-            } else if (key == rl.KEY_S) {
+            } else if (key == .s) {
                 self.s = true;
             }
-            if (key == rl.KEY_ENTER) {
+            if (key == .enter) {
                 self.enter = true;
             }
         }
     }
 
-    pub fn keyReleased(self: *Game, key: c_int) void {
+    pub fn keyReleased(self: *Game, key: Key) void {
         if (self.menu.state_jogo) {
-            if (key == rl.KEY_W) {
+            if (key == .w) {
                 self.player.up = false;
-            } else if (key == rl.KEY_S) {
+            } else if (key == .s) {
                 self.player.down = false;
             }
 
-            if (key == rl.KEY_D) {
+            if (key == .d) {
                 self.player.right = false;
-            } else if (key == rl.KEY_A) {
+            } else if (key == .a) {
                 self.player.left = false;
             }
         }
