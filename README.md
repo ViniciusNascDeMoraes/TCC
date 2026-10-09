@@ -13,7 +13,8 @@ As duas versões têm a mesma jogabilidade, as mesmas fases, telas e sons.
 
 - `W` / `S`: navegar nos menus
 - `Enter`: selecionar
-- `Esc`: pausar / voltar dos créditos
+- `Esc`: pausar e despausar / voltar dos créditos
+- `Enter` ou `Esc` na tela final: voltar ao menu inicial
 - `W` `A` `S` `D`: mover o personagem
 
 ## Versão Java
@@ -41,7 +42,8 @@ zig build run
 O primeiro build baixa e compila o raylib automaticamente. Outros comandos:
 
 - `zig build -Doptimize=ReleaseFast`: executável otimizado em `zig-out/bin/`
-- `zig build -Dtarget=x86_64-windows`: gera o `.exe` do Windows a partir de qualquer sistema
+  (no Windows ele abre sem a janela de console; o build de Debug mantém o console com o FPS)
+- `zig build -Dtarget=x86_64-windows -Doptimize=ReleaseFast`: gera o `.exe` do Windows a partir de qualquer sistema
 - `zig build test`: testes da lógica do jogo
 
 As imagens e sons ficam embutidos no executável, então ele roda de qualquer pasta.

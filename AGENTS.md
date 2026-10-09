@@ -23,7 +23,7 @@
 
 - Requires Zig 0.16.x (`minimum_zig_version` in `zig/build.zig.zon`). raylib 6.0 does not build with older Zig, and Zig 0.17 is not supported by raylib yet.
 - Work from `zig/`: `zig build run` (downloads and compiles raylib on the first build), `zig build test` (pure logic tests, no window), `zig build -Doptimize=ReleaseFast`.
-- Cross-compile for Windows from any OS: `zig build -Dtarget=x86_64-windows`.
+- Cross-compile for Windows from any OS: `zig build -Dtarget=x86_64-windows`. Optimized Windows builds use the GUI subsystem (no console window); Debug builds keep the console for the FPS log.
 - Linux builds need X11/GL dev packages (Debian/Ubuntu: `libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev`).
 - Assets are embedded into the executable through `zig/res/assets.zig` (`@embedFile`), so the binary runs from any directory. `zig/res/` holds copies of only the assets the game uses.
 - `zig/.zig-cache/`, `zig/zig-out/`, and `zig/zig-pkg/` (Zig 0.16 package cache) are ignored by `.gitignore`.
@@ -41,7 +41,7 @@
 ## Manual Verification
 
 - There are no automated gameplay tests; verify by launching either game and exercising it manually.
-- Controls: `W`/`S` navigate menus, `Enter` selects, `Esc` pauses or returns from credits, and in-game movement is `WASD`.
+- Controls: `W`/`S` navigate menus, `Enter` selects, `Esc` pauses/unpauses or returns from credits, `Enter`/`Esc` on the end screen returns to the main menu, and in-game movement is `WASD`.
 
 ## Git Workflow
 
