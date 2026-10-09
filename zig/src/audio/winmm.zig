@@ -1,5 +1,5 @@
 //! Saida de audio no Windows pelo waveOut (winmm.dll), declarado aqui mesmo
-//! em Zig. Quatro buffers de 10 ms circulam entre a thread de audio e o
+//! em Zig. Cinco buffers de 10 ms circulam entre a thread de audio e o
 //! driver: cada um que volta (WHDR_DONE) e preenchido de novo pelo mixer.
 
 const std = @import("std");
@@ -45,14 +45,19 @@ extern "winmm" fn waveOutClose(handle: HWAVEOUT) callconv(.winapi) MMRESULT;
 extern "kernel32" fn CreateEventW(attributes: ?*anyopaque, manual_reset: BOOL, initial_state: BOOL, name: ?[*:0]const u16) callconv(.winapi) ?HANDLE;
 extern "kernel32" fn WaitForSingleObject(handle: HANDLE, milliseconds: DWORD) callconv(.winapi) DWORD;
 extern "kernel32" fn CloseHandle(handle: HANDLE) callconv(.winapi) BOOL;
+extern "kernel32" fn GetCurrentThread() callconv(.winapi) HANDLE;
+extern "kernel32" fn SetThreadPriority(thread: HANDLE, priority: c_int) callconv(.winapi) BOOL;
 
 const WAVE_MAPPER = 0xFFFFFFFF;
 const CALLBACK_EVENT = 0x00050000;
 const WHDR_DONE = 0x1;
 
-const buffer_count = 4;
-/// 10 ms por buffer: um som pedido sai em no maximo ~40 ms, como no Linux.
+/// Um som pedido sai em no maximo ~50 ms, e a thread pode atrasar ate
+/// ~40 ms sem o audio falhar (os outros quatro buffers continuam tocando).
+const buffer_count = 5;
+/// 10 ms por buffer.
 const buffer_frames = wav.sample_rate / 100;
+const THREAD_PRIORITY_TIME_CRITICAL = 15;
 
 /// O waveOut nao precisa de nada preparado na thread principal.
 pub const Config = struct {};
@@ -67,6 +72,9 @@ pub fn prepare(gpa: std.mem.Allocator, io: std.Io, env: *const std.process.Envir
 /// Corpo da thread de audio: termina quando `running` vira falso.
 pub fn run(config: *const Config, mixer: *Mixer, running: *const std.atomic.Value(bool)) void {
     _ = config;
+    // A thread so mistura e devolve buffers: prioridade alta evita que outros
+    // programas a atrasem a ponto de o audio falhar.
+    _ = SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
     const event = CreateEventW(null, 0, 0, null) orelse return;
     defer _ = CloseHandle(event);
 
