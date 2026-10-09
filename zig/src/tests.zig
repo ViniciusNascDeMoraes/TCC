@@ -9,5 +9,6 @@ test {
     _ = @import("wav.zig");
     _ = @import("mixer.zig");
     _ = @import("raster.zig");
+    _ = @import("cff.zig");
     _ = @import("ttf.zig");
 }
