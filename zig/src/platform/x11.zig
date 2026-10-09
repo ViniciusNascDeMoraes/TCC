@@ -402,18 +402,25 @@ pub const Window = struct {
         }
     }
 
-    /// Le e trata os eventos que ja chegaram, sem bloquear.
+    /// Le e trata os eventos que ja chegaram, sem bloquear. Comeca pelo que
+    /// ficou no buffer: eventos lidos junto com a resposta de um request.
     fn pump(self: *Window) Error!void {
         try self.flush();
+        try self.drain();
         while (try linux_sys.pollIn(self.fd, 0)) {
             try self.fill();
-            while (self.peek()) |packet| {
-                self.in_start += packet.len;
-                switch (packet[0] & 0x7F) {
-                    proto.event.reply => {},
-                    proto.event.err => logError(packet),
-                    else => try self.handleEvent(packet),
-                }
+            try self.drain();
+        }
+    }
+
+    /// Trata todos os pacotes completos que estao no buffer.
+    fn drain(self: *Window) Error!void {
+        while (self.peek()) |packet| {
+            self.in_start += packet.len;
+            switch (packet[0] & 0x7F) {
+                proto.event.reply => {},
+                proto.event.err => logError(packet),
+                else => try self.handleEvent(packet),
             }
         }
     }
