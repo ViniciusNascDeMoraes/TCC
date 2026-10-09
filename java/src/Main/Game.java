@@ -7,6 +7,8 @@ import World.World;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
@@ -53,8 +55,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
     private Thread thread;
     private BufferedImage image;
     private boolean running, fim = false;
-    // Esc ainda segurado: a auto-repeticao da tecla nao alterna a pausa de novo.
-    private boolean escPressionado = false;
+    // Esc e Enter ainda segurados: a auto-repeticao dessas teclas e ignorada.
+    private boolean escPressionado = false, enterPressionado = false;
 
     public Game() {
 
@@ -123,6 +125,17 @@ public class Game extends Canvas implements Runnable, KeyListener {
         }
 
         addKeyListener(this);
+        // Sem foco o AWT nao avisa quando as teclas sao soltas: considera todas soltas.
+        addFocusListener(new FocusAdapter() {
+            public void focusLost(FocusEvent e) {
+                escPressionado = false;
+                enterPressionado = false;
+                player.up = false;
+                player.down = false;
+                player.left = false;
+                player.right = false;
+            }
+        });
         setPreferredSize(new Dimension(width * scale, height * scale));
 
         frameinit();
@@ -522,9 +535,17 @@ public class Game extends Canvas implements Runnable, KeyListener {
     }
 
     public void keyPressed(KeyEvent e) {
-        boolean escRepetido = e.getKeyCode() == KeyEvent.VK_ESCAPE && escPressionado == true;
+        // Esc e Enter so contam quando apertados de novo: segurar a tecla nao repete a acao.
         if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            if (escPressionado == true) {
+                return;
+            }
             escPressionado = true;
+        } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            if (enterPressionado == true) {
+                return;
+            }
+            enterPressionado = true;
         }
 
         if (menu.stateInicio == true && gameOver == false) {
@@ -553,7 +574,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 player.left = true;
             }
 
-            if (e.getKeyCode() == KeyEvent.VK_ESCAPE && gameOver == false && escRepetido == false) {
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE && gameOver == false) {
                 if (pause == true) {
                     // Descarta W/S/Enter apertados no menu de pausa e ainda nao processados.
                     pause = false;
@@ -594,6 +615,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public void keyReleased(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
             escPressionado = false;
+        } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            enterPressionado = false;
         }
 
         if (menu.stateJogo == true) {

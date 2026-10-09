@@ -78,6 +78,15 @@ fn normalizeKey(key: c_int) c_int {
     return if (key == rl.KEY_KP_ENTER) rl.KEY_ENTER else key;
 }
 
+/// Esc e Enter so contam quando apertados de novo: segurar a tecla nao
+/// repete a acao (no Java, as flags `escPressionado`/`enterPressionado`).
+fn repeatsWhenHeld(key: c_int) bool {
+    return switch (key) {
+        rl.KEY_ESCAPE, rl.KEY_ENTER, rl.KEY_KP_ENTER => false,
+        else => true,
+    };
+}
+
 pub const Game = struct {
     /// Resolucao interna do mundo; a janela e `scale` vezes maior.
     pub const width = 240;
@@ -103,8 +112,6 @@ pub const Game = struct {
     dialogo: bool = false,
     vacinado: bool = false,
     fim: bool = false,
-    /// Esc ainda segurado: a auto-repeticao da tecla nao alterna a pausa de novo.
-    esc_pressionado: bool = false,
     game_over: bool = false,
     /// `Enemy.escudo`, `Enemy02.escudo` e `Enemy03.escudo`.
     escudo: [3]bool = @splat(true),
@@ -378,7 +385,8 @@ pub const Game = struct {
 
     /// Le o teclado do quadro e repassa para `keyPressed`/`keyReleased`,
     /// como os eventos do `KeyListener` do Java (incluindo a repeticao
-    /// automatica de tecla segurada).
+    /// automatica de W/A/S/D segurado). A fila do `GetKeyPressed` so tem
+    /// apertos novos, entao um Esc solto e apertado no mesmo quadro conta.
     pub fn handleInput(self: *Game) void {
         var pressed_now: [keys.len]bool = @splat(false);
         while (true) {
@@ -390,16 +398,13 @@ pub const Game = struct {
         }
 
         for (keys, pressed_now) |key, pressed| {
-            if (rl.IsKeyPressedRepeat(key)) self.keyPressed(normalizeKey(key));
+            if (rl.IsKeyPressedRepeat(key) and repeatsWhenHeld(key)) self.keyPressed(normalizeKey(key));
             // Tecla apertada e solta no mesmo quadro tambem gera a soltura.
             if (rl.IsKeyReleased(key) or (pressed and !rl.IsKeyDown(key))) self.keyReleased(normalizeKey(key));
         }
     }
 
     pub fn keyPressed(self: *Game, key: c_int) void {
-        const esc_repetido = key == rl.KEY_ESCAPE and self.esc_pressionado;
-        if (key == rl.KEY_ESCAPE) self.esc_pressionado = true;
-
         if (self.menu.state_inicio and self.normal()) {
             if (key == rl.KEY_W) {
                 self.menu.w = true;
@@ -426,7 +431,7 @@ pub const Game = struct {
                 self.player.left = true;
             }
 
-            if (key == rl.KEY_ESCAPE and self.normal() and !esc_repetido) {
+            if (key == rl.KEY_ESCAPE and self.normal()) {
                 if (self.pause) {
                     // Descarta W/S/Enter apertados no menu de pausa e ainda nao processados.
                     self.pause = false;
@@ -464,8 +469,6 @@ pub const Game = struct {
     }
 
     pub fn keyReleased(self: *Game, key: c_int) void {
-        if (key == rl.KEY_ESCAPE) self.esc_pressionado = false;
-
         if (self.menu.state_jogo) {
             if (key == rl.KEY_W) {
                 self.player.up = false;
