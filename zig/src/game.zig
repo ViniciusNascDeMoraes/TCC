@@ -212,6 +212,13 @@ pub const Game = struct {
                 try self.restartGame();
                 self.vacinado = false;
             }
+
+            // Todos os inimigos eliminados e o jogador chegou em casa: fim de jogo.
+            if (self.level == 3 and self.contador >= self.total_inimigos and self.player.getY() < 175 and
+                self.player.getX() > 559 and self.player.getX() < 593)
+            {
+                self.fim = true;
+            }
         } else if (self.fim) {
             // Tela final: tudo parado ate Enter/Esc.
             if (self.enter) {
@@ -297,6 +304,9 @@ pub const Game = struct {
             self.menu.state_loading and !self.menu.state_jogo and !self.pause)
         {
             self.menu.render(self);
+        } else if (self.fim) {
+            gfx.fillScreen(gfx.blue);
+            gfx.drawScreen(self.screens.imagem_fim);
         } else if (self.pause and self.normal()) {
             self.renderOptions(txtmenu1, txtmenu2, gfx.white);
         } else if (self.game_over) {
@@ -332,12 +342,6 @@ pub const Game = struct {
                 self.dialogo = false;
                 self.vacinado = true;
             }
-        } else if (self.fim or
-            self.player.getY() < 175 and self.player.getX() > 559 and self.player.getX() < 593 and self.level == 3 and self.contador >= self.total_inimigos)
-        {
-            self.fim = true;
-            gfx.fillScreen(gfx.blue);
-            gfx.drawScreen(self.screens.imagem_fim);
         }
     }
 

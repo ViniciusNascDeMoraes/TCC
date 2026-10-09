@@ -246,6 +246,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 vacinado = false;
             }
 
+            // Todos os inimigos eliminados e o jogador chegou em casa: fim de jogo.
+            if (LEVEL == 3 && contador >= totalInimigos && player.getY() < 175 && player.getX() > 559
+                    && player.getX() < 593) {
+                fim = true;
+            }
+
         } else if (fim == true) {
             if (enter == true) {
 
@@ -383,6 +389,11 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
             menu.render(g);
 
+        } else if (fim == true) {
+            g.setColor(BLUE);
+            g.fillRect(0, 0, Game.widthfm, Game.heightfm);
+
+            g.drawImage(Game.ImagemFim, 0, 0, Game.widthfm, Game.heightfm, null);
         } else if (pause == true && gameOver == false) {
             g.setColor(Color.white);
             g.setFont(new Font("Bookman Old Style", Font.BOLD, 30));
@@ -467,15 +478,6 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 vacinado = true;
             }
 
-        } else if (fim == true
-                || player.getY() < 175 && player.getX() > 559 && player.getX() < 593 && LEVEL == 3 && contador >= totalInimigos) {
-            fim = true;
-
-            g.clearRect(0, 0, Game.widthfm, Game.heightfm);
-            g.setColor(BLUE);
-            g.fillRect(0, 0, Game.widthfm, Game.heightfm);
-
-            g.drawImage(Game.ImagemFim, 0, 0, Game.widthfm, Game.heightfm, null);
         }
 
         if (LEVEL == 1 && gameOver == false && menu.stateJogo == true && player.getY() > 160) {
