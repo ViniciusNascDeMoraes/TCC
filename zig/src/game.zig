@@ -21,61 +21,79 @@ const Text = @import("text.zig").Text;
 const world_mod = @import("world.zig");
 const World = world_mod.World;
 
-const txtmenu1 = "Retornar ao jogo";
-const txtmenu2 = "Sair do jogo";
-const txtgo1 = "Reiniciar a fase";
-const txtgo2 = "Sair do jogo";
-const txt_missao_texto = "Chegue no hospital";
-const txt_missao_texto1 = "para se vacinar!";
-const txt_missao_texto3 = "Dica: Desvie das bactérias.";
-const txt_missao_texto4 = "Vá para a área amarela";
-const txt_missao_texto5 = "para se vacinar";
-const txt_missao_texto6 = "Utilize seu escudo para ";
-const txt_missao_texto7 = "eliminar todos os vírus e bactérias";
-const txt_missao_texto8 = "Inimigos eliminados: ";
-const txt_missao_texto9 = "Todos os inimigos foram eliminados,";
-const txt_missao_texto10 = "volte para casa!";
+/// Idioma escolhido no menu inicial (o `Game.idioma` do Java).
+pub const Lang = enum { pt, en };
 
-/// Imagens de tela inteira (960x640).
+/// Um texto em portugues e em ingles, como os pares `{ ..., ... }` do Java;
+/// `Game.tr` escolhe o do idioma atual.
+pub const Tr = [2][]const u8;
+
+const txtmenu1: Tr = .{ "Retornar ao jogo", "Resume game" };
+const txtmenu2: Tr = .{ "Sair do jogo", "Quit game" };
+const txtgo1: Tr = .{ "Reiniciar a fase", "Restart level" };
+const txtgo2: Tr = .{ "Sair do jogo", "Quit game" };
+const txt_missao_texto: Tr = .{ "Chegue no hospital", "Get to the hospital" };
+const txt_missao_texto1: Tr = .{ "para se vacinar!", "to get vaccinated!" };
+const txt_missao_texto3: Tr = .{ "Dica: Desvie das bactérias.", "Tip: Dodge the bacteria." };
+const txt_missao_texto4: Tr = .{ "Vá para a área amarela", "Go to the yellow area" };
+const txt_missao_texto5: Tr = .{ "para se vacinar", "to get vaccinated" };
+const txt_missao_texto6: Tr = .{ "Utilize seu escudo para ", "Use your shield to " };
+const txt_missao_texto7: Tr = .{ "eliminar todos os vírus e bactérias", "eliminate all viruses and bacteria" };
+const txt_missao_texto8: Tr = .{ "Inimigos eliminados: ", "Enemies eliminated: " };
+const txt_missao_texto9: Tr = .{ "Todos os inimigos foram eliminados,", "All enemies have been eliminated," };
+const txt_missao_texto10: Tr = .{ "volte para casa!", "go back home!" };
+
+/// Imagens de tela inteira (960x640). As que tem texto desenhado na imagem
+/// existem em portugues e em ingles (`res/*_en.png`), escolhidas com `Game.tr`.
 pub const Screens = struct {
-    menu: gfx.Image,
-    creditos: gfx.Image,
+    menu: [2]gfx.Image,
+    creditos: [2]gfx.Image,
     morreu: gfx.Image,
-    imagem_fim: gfx.Image,
-    tela_vacina: gfx.Image,
-    vacinando: [4]gfx.Image,
+    imagem_fim: [2]gfx.Image,
+    tela_vacina: [2]gfx.Image,
+    vacinando: [4][2]gfx.Image,
 
-    const files = [_][]const u8{
-        assets.tela_menu,
-        assets.tela_creditos,
-        assets.game_over,
-        assets.tela_fim,
-        assets.tela_vacina,
-        assets.vacinando,
-        assets.vacinando1,
-        assets.vacinando2,
-        assets.vacinando3,
+    /// Pares (portugues, ingles), na ordem: menu, creditos, fim, vacina e os
+    /// quatro quadros de "vacinando".
+    const translated = [_][2][]const u8{
+        .{ assets.tela_menu, assets.tela_menu_en },
+        .{ assets.tela_creditos, assets.tela_creditos_en },
+        .{ assets.tela_fim, assets.tela_fim_en },
+        .{ assets.tela_vacina, assets.tela_vacina_en },
+        .{ assets.vacinando, assets.vacinando_en },
+        .{ assets.vacinando1, assets.vacinando1_en },
+        .{ assets.vacinando2, assets.vacinando2_en },
+        .{ assets.vacinando3, assets.vacinando3_en },
     };
 
     fn load(gpa: std.mem.Allocator) !Screens {
-        var images: [files.len]gfx.Image = undefined;
-        for (files, 0..) |png, i| {
-            errdefer for (images[0..i]) |image| image.deinit(gpa);
-            images[i] = try gfx.loadImage(gpa, png);
+        const morreu = try gfx.loadImage(gpa, assets.game_over);
+        errdefer morreu.deinit(gpa);
+        var pairs: [translated.len][2]gfx.Image = undefined;
+        for (translated, 0..) |files, i| {
+            errdefer for (pairs[0..i]) |pair| {
+                for (pair) |image| image.deinit(gpa);
+            };
+            pairs[i][0] = try gfx.loadImage(gpa, files[0]);
+            errdefer pairs[i][0].deinit(gpa);
+            pairs[i][1] = try gfx.loadImage(gpa, files[1]);
         }
         return .{
-            .menu = images[0],
-            .creditos = images[1],
-            .morreu = images[2],
-            .imagem_fim = images[3],
-            .tela_vacina = images[4],
-            .vacinando = images[5..9].*,
+            .menu = pairs[0],
+            .creditos = pairs[1],
+            .morreu = morreu,
+            .imagem_fim = pairs[2],
+            .tela_vacina = pairs[3],
+            .vacinando = pairs[4..8].*,
         };
     }
 
     fn unload(self: Screens, gpa: std.mem.Allocator) void {
-        for ([_]gfx.Image{ self.menu, self.creditos, self.morreu, self.imagem_fim, self.tela_vacina } ++ self.vacinando) |image| {
+        for (self.menu ++ self.creditos ++ [_]gfx.Image{self.morreu} ++ self.imagem_fim ++ self.tela_vacina) |image| {
             image.deinit(gpa);
+        }
+        for (self.vacinando) |pair| {
+            for (pair) |image| image.deinit(gpa);
         }
     }
 };
@@ -108,6 +126,8 @@ pub const Game = struct {
     text: Text,
     sounds: Sounds,
 
+    /// Fica como o jogador escolheu ate o jogo fechar (`voltarAoMenu` nao muda).
+    lang: Lang = .pt,
     level: i32 = 1,
     contador: i32 = 0,
     /// Inimigos criados no mapa do nivel atual; no nivel 3 e preciso eliminar todos.
@@ -174,6 +194,11 @@ pub const Game = struct {
         self.image.deinit(self.gpa);
         self.screens.unload(self.gpa);
         self.spritesheet.unload(self.gpa);
+    }
+
+    /// O texto (ou a imagem) do idioma atual.
+    pub fn tr(self: *const Game, pair: anytype) @TypeOf(pair[0]) {
+        return pair[@intFromEnum(self.lang)];
     }
 
     fn normal(self: Game) bool {
@@ -316,12 +341,12 @@ pub const Game = struct {
             self.menu.render(self);
         } else if (self.fim) {
             gfx.fillScreen(self.frame, gfx.blue);
-            gfx.drawScreen(self.frame, self.screens.imagem_fim);
+            gfx.drawScreen(self.frame, self.tr(self.screens.imagem_fim));
         } else if (self.pause and self.normal()) {
-            self.renderOptions(txtmenu1, txtmenu2, gfx.white);
+            self.renderOptions(self.tr(txtmenu1), self.tr(txtmenu2), gfx.white);
         } else if (self.game_over) {
             gfx.drawScreen(self.frame, self.screens.morreu);
-            self.renderOptions(txtgo1, txtgo2, gfx.black);
+            self.renderOptions(self.tr(txtgo1), self.tr(txtgo2), gfx.black);
         } else if (self.player.getY() < 20 and self.player.getX() > 93 and self.player.getX() < 98 and self.level == 2) {
             self.dialogo = true;
             gfx.fillScreen(self.frame, gfx.blue);
@@ -330,19 +355,19 @@ pub const Game = struct {
             if (self.volta < 3) {
                 // Cada imagem fica 39 quadros; os quadros 40, 80, 120 e 160 ficam so azuis.
                 if (self.time < 40) {
-                    gfx.drawScreen(self.frame, self.screens.vacinando[0]);
+                    gfx.drawScreen(self.frame, self.tr(self.screens.vacinando[0]));
                 } else if (self.time > 40 and self.time < 80) {
-                    gfx.drawScreen(self.frame, self.screens.vacinando[1]);
+                    gfx.drawScreen(self.frame, self.tr(self.screens.vacinando[1]));
                 } else if (self.time > 80 and self.time < 120) {
-                    gfx.drawScreen(self.frame, self.screens.vacinando[2]);
+                    gfx.drawScreen(self.frame, self.tr(self.screens.vacinando[2]));
                 } else if (self.time > 120 and self.time < 160) {
-                    gfx.drawScreen(self.frame, self.screens.vacinando[3]);
+                    gfx.drawScreen(self.frame, self.tr(self.screens.vacinando[3]));
                 } else if (self.time > 160) {
                     self.time = 0;
                     self.volta += 1;
                 }
             } else if (self.volta >= 3 and self.volta < 5) {
-                gfx.drawScreen(self.frame, self.screens.tela_vacina);
+                gfx.drawScreen(self.frame, self.tr(self.screens.tela_vacina));
 
                 if (self.time > 100) {
                     self.volta += 1;
@@ -375,24 +400,24 @@ pub const Game = struct {
     /// Textos de missao no canto superior esquerdo (desenhados por cima de tudo).
     fn renderMission(self: *Game) void {
         if (self.level == 1 and self.normal() and self.menu.state_jogo and self.player.getY() > 160) {
-            self.text.draw(self.frame, txt_missao_texto, .s23, 15, 30, gfx.white);
-            self.text.draw(self.frame, txt_missao_texto1, .s23, 15, 60, gfx.white);
-            self.text.draw(self.frame, txt_missao_texto3, .s23, 15, 100, gfx.white);
+            self.text.draw(self.frame, self.tr(txt_missao_texto), .s23, 15, 30, gfx.white);
+            self.text.draw(self.frame, self.tr(txt_missao_texto1), .s23, 15, 60, gfx.white);
+            self.text.draw(self.frame, self.tr(txt_missao_texto3), .s23, 15, 100, gfx.white);
         } else if (self.level == 2 and self.normal() and self.menu.state_jogo and !self.vacinado and !self.dialogo) {
-            self.text.draw(self.frame, txt_missao_texto4, .s20, 15, 30, gfx.black);
-            self.text.draw(self.frame, txt_missao_texto5, .s20, 15, 60, gfx.black);
+            self.text.draw(self.frame, self.tr(txt_missao_texto4), .s20, 15, 30, gfx.black);
+            self.text.draw(self.frame, self.tr(txt_missao_texto5), .s20, 15, 60, gfx.black);
         } else if (self.level == 3 and self.normal() and self.menu.state_jogo and self.player.getY() > 160) {
             if (self.contador < self.total_inimigos) {
-                self.text.draw(self.frame, txt_missao_texto6, .s23, 15, 30, gfx.white);
-                self.text.draw(self.frame, txt_missao_texto7, .s23, 15, 60, gfx.white);
-                self.text.draw(self.frame, txt_missao_texto8, .s23, 15, 100, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto6), .s23, 15, 30, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto7), .s23, 15, 60, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto8), .s23, 15, 100, gfx.white);
                 var buffer: [16]u8 = undefined;
                 const contador = std.fmt.bufPrint(&buffer, "{d}", .{self.contador}) catch unreachable;
                 self.text.draw(self.frame, contador, .s23, 275, 101, gfx.white);
             }
             if (self.contador >= self.total_inimigos and !self.fim) {
-                self.text.draw(self.frame, txt_missao_texto9, .s20, 15, 30, gfx.white);
-                self.text.draw(self.frame, txt_missao_texto10, .s20, 15, 60, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto9), .s20, 15, 30, gfx.white);
+                self.text.draw(self.frame, self.tr(txt_missao_texto10), .s20, 15, 60, gfx.white);
             }
         }
     }

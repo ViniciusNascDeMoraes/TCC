@@ -235,6 +235,14 @@ test "decodifica os assets com as mesmas cores do Java" {
         .{ assets.level1, 15, 45, 0xa7ae78d4 },
         .{ assets.level2, 15, 10, 0x9b6f1c01 },
         .{ assets.level3, 43, 60, 0xa34dd150 },
+        .{ assets.tela_menu_en, 960, 640, 0xcb21953b },
+        .{ assets.tela_creditos_en, 960, 640, 0x1fa0f789 },
+        .{ assets.tela_fim_en, 960, 640, 0xbda23178 },
+        .{ assets.tela_vacina_en, 960, 640, 0x284ccf5d },
+        .{ assets.vacinando_en, 960, 640, 0x36c87388 },
+        .{ assets.vacinando1_en, 960, 640, 0x35331499 },
+        .{ assets.vacinando2_en, 960, 640, 0x352e1446 },
+        .{ assets.vacinando3_en, 960, 640, 0x337534fb },
     };
     for (cases) |case| {
         const canvas = try decode(testing.allocator, case[0]);
