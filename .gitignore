@@ -9,6 +9,11 @@
 /zig/zig-out/
 /zig/zig-pkg/
 
+# Build artifacts (Odin)
+/odin/*.bin
+/odin/*.exe
+/odin/*.pdb
+
 # Generated documentation
 /java/doc/
 

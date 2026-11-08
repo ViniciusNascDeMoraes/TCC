@@ -1,13 +1,14 @@
 # Vacina
 
-Jogo 2D do TCC em duas versões independentes, uma em cada pasta:
+Jogo 2D do TCC em três versões independentes, uma em cada pasta:
 
 | Pasta | Versão | Tecnologia |
 |---|---|---|
 | [`java/`](java/) | Original | Java 25, AWT/Swing |
 | [`zig/`](zig/) | Port fiel da versão Java | Zig 0.16 puro, sem dependências |
+| [`odin/`](odin/) | Port fiel da versão Java | Odin + raylib (o que vem com o Odin) |
 
-As duas versões têm a mesma jogabilidade, as mesmas fases, telas e sons, em
+As três versões têm a mesma jogabilidade, as mesmas fases, telas e sons, em
 português e em inglês: a opção "Idioma: Português" / "Language: English" do menu
 inicial troca o idioma na hora (o jogo sempre abre em português).
 
@@ -68,3 +69,38 @@ Limitações conhecidas da versão Zig:
   reiniciar, o som volta sozinho em até 2 s.
 - No X11 a tela precisa ter 24 bits de cor e cada quadro é enviado pelo socket
   (PutImage), sem memória compartilhada (MIT-SHM).
+
+## Versão Odin
+
+Requer o [Odin](https://odin-lang.org/docs/install/) dev-2026-11 ou mais novo
+(testado com o dev-2026-11a). Janela, teclado, som, PNG e o desenho das fontes
+vêm do raylib que acompanha o compilador (`vendor:raylib`), então nada é baixado.
+Na pasta `odin/`:
+
+```sh
+cd odin
+odin run vacina
+```
+
+Outros comandos:
+
+- `odin build vacina -o:speed`: executável otimizado (`vacina.bin` no Linux, `vacina.exe` no Windows);
+  no Windows, acrescente `-subsystem:windows` para ele abrir sem a janela de console
+- `odin test tests`: testes da lógica do jogo
+
+As imagens e sons ficam embutidos no executável (`#load`), então ele roda de
+qualquer pasta. No Linux o link precisa da libX11 (pacote `libx11-dev` no
+Debian/Ubuntu) e o jogo precisa de OpenGL 3.3 (Mesa serve); o som sai pelo que o
+raylib encontrar (PulseAudio, PipeWire, ALSA...) e, sem dispositivo de áudio, o
+jogo roda sem som. Se o Odin foi clonado do git em vez de baixado, as bibliotecas
+do raylib vêm pelo Git LFS (`git lfs pull` na pasta do Odin).
+
+O texto procura as mesmas fontes da versão Zig, na mesma ordem (Bookman Old Style,
+URW Bookman, Arial/DejaVu Sans/Liberation Sans em negrito); sem nenhuma delas, usa
+a fonte bitmap do raylib, ampliada. As larguras do texto (e o centro dos menus)
+vêm das métricas da fonte, como no Java.
+
+Limitações conhecidas da versão Odin:
+
+- Foi testada só no Linux. O raylib do Odin também existe para Windows e macOS,
+  mas o jogo não foi testado neles.
