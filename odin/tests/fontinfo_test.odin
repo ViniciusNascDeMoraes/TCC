@@ -38,7 +38,7 @@ Font_Case :: struct {
 	ascents: [5]i32,
 }
 
-// Mesmas larguras que o port em Zig calcula (zig/src/glyphs.zig).
+// Larguras tiradas do `hmtx` de cada fonte, com o avanco arredondado por glifo.
 @(test)
 larguras_das_fontes_do_sistema_seguem_o_hmtx :: proc(t: ^testing.T) {
 	cases := [?]Font_Case {
