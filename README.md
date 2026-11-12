@@ -4,7 +4,7 @@ Jogo 2D do TCC em duas versões independentes, uma em cada pasta:
 
 | Pasta | Versão | Tecnologia |
 |---|---|---|
-| [`java/`](java/) | Original | Java 25, AWT/Swing |
+| [`java/`](java/) | Original | Java 27, AWT/Swing |
 | [`odin/`](odin/) | Port fiel da versão Java | Odin + raylib (o que vem com o Odin) |
 
 As duas versões têm a mesma jogabilidade, as mesmas fases, telas e sons, em
@@ -21,7 +21,7 @@ inicial troca o idioma na hora (o jogo sempre abre em português).
 
 ## Versão Java
 
-Requer um JDK 25 no `PATH`. Na pasta `java/`:
+Requer um JDK 27 no `PATH`. Na pasta `java/`:
 
 ```sh
 cd java

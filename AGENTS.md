@@ -9,7 +9,7 @@
 - Both versions are in Portuguese and English. Every on-screen text is a `{ português, english }` pair next to where it is drawn (Java: `String[]` indexed by `Game.idioma`; Odin: `Tr` (`[2]string`) picked by `tr(g, ...)` with `g.lang`); add or change both languages together. The main menu option "Idioma: Português" / "Language: English" toggles the language; the game always starts in Portuguese.
 - Screens with text drawn in the image have an English copy named `<Name>_en.png` in `java/res/` and `odin/res/` (`GameOver.png` is shared). They were made by erasing the Portuguese lines with the background color (9, 156, 147) and drawing the English in URW Bookman Light with a 0.5 px stroke (close to Bookman Old Style Regular), at the same size, baseline and center.
 - No Maven, Gradle, wrapper scripts, CI workflows, lint, or codegen config exist. The Odin project has unit tests for its pure logic.
-- Java IntelliJ metadata: `.idea/` stays at the repo root and points to `java/TCC.iml`, which marks `java/src/` and `java/res/` as source roots, outputs to `java/bin/`, and targets JDK 25.
+- Java IntelliJ metadata: `.idea/` stays at the repo root and points to `java/TCC.iml`, which marks `java/src/` and `java/res/` as source roots, outputs to `java/bin/`, and targets JDK 27.
 - Do not assume Eclipse files exist; there is no `.classpath` or `.project` in the current repo.
 
 ## Java: Build And Run
