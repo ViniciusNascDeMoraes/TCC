@@ -4,11 +4,6 @@
 /out/
 *.class
 
-# Build artifacts (Zig)
-/zig/.zig-cache/
-/zig/zig-out/
-/zig/zig-pkg/
-
 # Build artifacts (Odin)
 /odin/*.bin
 /odin/*.exe
