@@ -34,10 +34,9 @@ repositório no IntelliJ IDEA.
 
 ## Versão Odin
 
-Requer o [Odin](https://odin-lang.org/docs/install/) dev-2026-11 ou mais novo
-(testado com o dev-2026-11a). Janela, teclado, som, PNG e o desenho das fontes
-vêm do raylib que acompanha o compilador (`vendor:raylib`), então nada é baixado.
-Na pasta `odin/`:
+Requer o [Odin](https://odin-lang.org/docs/install/) dev-2026-11a ou mais novo.
+Janela, teclado, som, PNG e o desenho das fontes vêm do raylib que acompanha o
+compilador (`vendor:raylib`), então nada é baixado. Na pasta `odin/`:
 
 ```sh
 cd odin

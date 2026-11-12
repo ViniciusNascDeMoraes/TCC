@@ -23,7 +23,7 @@
 
 ## Odin: Build And Run
 
-- Requires Odin dev-2026-11 or newer (tested with dev-2026-11a); older releases lack the current `core:os` API (`os.read_entire_file(path, allocator)` returning `os.Error`, `os.lookup_env(key, allocator)`).
+- Requires Odin dev-2026-11a or newer (the release it is tested with); releases before dev-2026-11 lack the current `core:os` API (`os.read_entire_file(path, allocator)` returning `os.Error`, `os.lookup_env(key, allocator)`).
 - Work from `odin/`: `odin run vacina`, `odin build vacina -o:speed` (output `vacina.bin` on Linux, `vacina.exe` on Windows), `odin test tests` (pure logic tests, no window or audio device). Add `-subsystem:windows` on Windows for a build without a console window.
 - The code passes `odin check vacina -vet -strict-style`; `rules`, `keys`, `fontinfo` and `tests` pass the same check with `-no-entry-point`. Keep it that way.
 - Nothing is downloaded: raylib 6.2 ships with the compiler (`vendor/raylib/`). In an Odin git clone those libraries are Git LFS files; without `git lfs pull` the link fails with "file format not recognized" on `libraylib.a`.
